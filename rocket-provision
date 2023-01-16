@@ -1,0 +1,269 @@
+#!/bin/bash
+#
+# Summary: Install the software via ansible on the local machine (and, wenn in WSL2 on the Windows Host).
+#
+# Usage: rocket install [COMMAND] [ --skipp ] [ tags=TAG-A,TAG-B,... ]
+#
+# Installs the development software.
+#
+# This is the documentation here...
+
+set -e
+[ -n "$ROCKET_DEBUG" ] && set -x || Q="-q"
+
+# Keep sudo timestamp updated while ROCKET is running.
+if [ "$1" = "--sudo-wait" ]; then
+  while true; do
+    mkdir -p "/var/db/sudo/$SUDO_USER"
+    touch "/var/db/sudo/$SUDO_USER"
+    sleep 1
+  done
+  exit 0
+fi
+
+ROCKET_SUCCESS=""
+
+# Set colors
+BOLD='\033[1m'
+RED='\033[91m'
+GREEN='\033[92m'
+BLUE='\033[94m'
+ENDC='\033[0m'
+
+
+# ----------------------------  Output functions  ------------------------------
+
+
+error_msg() {
+  echo -e "${BOLD}${RED}!!! $*${ENDC}" >&2
+}
+
+cleanup() {
+  set +e
+  if [ -n "$ROCKET_SUDO_WAIT_PID" ]; then
+    sudo kill "$ROCKET_SUDO_WAIT_PID"
+  fi
+  sudo -k
+  rm -f "$CLT_PLACEHOLDER"
+  if [ -z "$ROCKET_SUCCESS" ]; then
+    echo
+    if [ -n "$ROCKET_STEP" ]; then
+      error_msg "$ROCKET_STEP FAILED"
+    else
+      error_msg "FAILED"
+    fi
+    if [ -z "$ROCKET_DEBUG" ]; then
+      error_msg "Run '$0 --debug' for debugging output."
+    fi
+  fi
+  echo
+}
+
+# Run the cleanup function above, if there is an error
+# or the user aborts the execution
+trap "cleanup" EXIT
+
+
+STDIN_FILE_DESCRIPTOR="0"
+[ -t "$STDIN_FILE_DESCRIPTOR" ] && ROCKET_INTERACTIVE="1"
+
+
+abort() {
+  ROCKET_STEP=""
+  error_msg "$*"
+  exit 1
+}
+
+log() {
+  ROCKET_STEP="$*"
+  echo -e "${BLUE}==>${ENDC} ${BOLD}$*${ENDC}"
+}
+
+logn()  { 
+  ROCKET_STEP="$*"
+  printf -- "${BLUE}==>${ENDC} ${BOLD}%s:${ENDC} " "$*"
+}
+
+logk()  {
+  ROCKET_STEP=""
+  echo -e "${GREEN}OK${ENDC}"
+  echo
+}
+
+
+# ----------------------------  Main functions  --------------------------------
+
+
+# Function to get the root user access
+get_root() {
+  # Get the full path of the script
+  ROCKET_FULL_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+
+  # Initialise sudo now to save prompting later.
+  log "Enter your password (for sudo access)"
+  sudo -k
+  sudo /usr/bin/true
+  [ -f "$ROCKET_FULL_PATH" ]
+  sudo bash "$ROCKET_FULL_PATH" --sudo-wait &
+  ROCKET_SUDO_WAIT_PID="$!"
+  ps -p "$ROCKET_SUDO_WAIT_PID" &>/dev/null
+  logk
+}
+
+
+# Function to update Homebrew
+update_homebrew() {
+  logn "Checking for Homebrew updates"
+  HOMEBREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
+  [ -n "$HOMEBREW_PREFIX" ] || HOMEBREW_PREFIX="/usr/local"
+  [ -d "$HOMEBREW_PREFIX" ] || sudo mkdir -p "$HOMEBREW_PREFIX"
+
+  HOMEBREW_REPOSITORY="$(brew --repository 2>/dev/null || true)"
+  [ -n "$HOMEBREW_REPOSITORY" ] || HOMEBREW_REPOSITORY="/usr/local/Homebrew"
+  [ -d "$HOMEBREW_REPOSITORY" ] || sudo mkdir -p "$HOMEBREW_REPOSITORY"
+
+  # Download Homebrew.
+  export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
+  [ -d "$GIT_DIR" ] && HOMEBREW_EXISTING="1"
+  if [ -n "$HOMEBREW_EXISTING" ]
+  then
+    git fetch $Q
+  else
+    git fetch $Q --no-tags --depth=1 --force --update-shallow
+  fi
+  git reset $Q --hard origin/master
+  unset GIT_DIR GIT_WORK_TREE HOMEBREW_EXISTING
+
+  # Update Homebrew.
+  export PATH="$HOMEBREW_PREFIX/bin:$PATH"
+  echo 
+  brew update
+  logk
+}
+
+
+# Check and install any remaining software updates.
+install_software_updates() {
+  logn "Checking for software updates"
+  if softwareupdate -l 2>&1 | grep $Q "No new software available."; then
+    logk
+  else
+    echo
+    log "Installing software updates:"
+    if [ -z "$ROCKET_CI" ]; then
+      sudo softwareupdate --install --all
+      xcode_license
+    else
+      echo "Skipping software updates for CI"
+    fi
+    logk
+  fi
+}
+
+
+# Function to run an Ansible playbook or 
+run_install() {
+  # Get the root user access
+  get_root
+
+  if [ "$1" = "Update Homebrew only" ]; then
+    # Update Homebrew.
+    update_homebrew
+  elif [ "$1" = "Install software updates only" ]; then
+    # Check and install any remaining software updates.
+    install_software_updates
+  else
+
+    if [ "$skip" == "no" ]; then
+      # Update Homebrew.
+      update_homebrew
+
+      # Check and install any remaining software updates.
+      install_software_updates
+    else
+      log "${RED}Skipping Homebrew updates and software updates!${ENDC}\n"
+    fi
+
+    # Run the Ansible playbook
+    name=$(echo "$1" | awk '{print tolower($0)}')
+
+    if [ ! "$tags" ]; then
+      tag_str=""
+    else
+      tag_str='-t $tags'
+    fi
+
+    log "Running Ansible playbook${ENDC} ${BLUE}$1 ($name.yml)"
+    ANSIBLE_CONFIG=$ROCKET_ROOT/ansible/ansible.cfg ansible-playbook -i localhost, -e ansible_python_interpreter=/usr/local/bin/python3 $ROCKET_ROOT/ansible/$name.yml $tag_str
+  fi
+}
+
+
+# ----------------------------  MAIN  ------------------------------------------
+
+
+if [ -z "${ROCKET_HEADER}" ]; then
+  echo -e "${BOLD}ROCKET LAUNCH - Provision${ENDC}"
+  echo "-------------------------------------"
+  echo
+fi
+
+
+command="$1"
+shift
+
+skip=no
+[[ "$1" == "--skip" ]] && skip=yes && shift
+
+
+for arg in $*
+do
+  [[ "$arg" == *=* ]] && eval $arg
+done
+
+
+case "$command" in
+"full" )
+  selection="Full"
+  run_install "$selection"
+  ;;
+"system" )
+  selection="System"
+  run_install "$selection"
+  ;;
+"development" )
+  selection="Development"
+  run_install "$selection"
+  ;;
+"applications" )
+  selection="Applications"
+  run_install "$selection"
+  ;;
+"configuration" )
+  selection="Configuration"
+  run_install "$selection"
+  ;;
+* )
+  PS3=$'\nPlease select installation type 1..8: '
+  select selection in "Update Homebrew only" "Install software updates only" Full System Development Applications Configuration Quit
+  do
+    if [ "$selection" = "Quit" ]
+    then
+      break
+    else
+      echo 
+      run_install "$selection"
+      break
+    fi
+  done
+  ;;
+esac
+
+
+ROCKET_SUCCESS="1"
+
+
+if [ ! "$selection" = "Quit" ]; then
+  echo
+  echo -e "${BOLD}We run successfully the ${ENDC}${BLUE}$selection ($name.yml)${ENDC}${BOLD} playbook!${ENDC}"
+fi

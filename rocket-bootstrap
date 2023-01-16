@@ -1,0 +1,355 @@
+#!/usr/bin/env bash
+#
+# Summary: Bootstrap of the "ROCKET" environment
+#
+# Usage: rocket bootstrap
+#
+# The bootstrap checks, if the full-disk encrypted is enabled, if the 
+# Xcode Command Line Tools are installed and if Homebrew, Python and Ansible 
+# are installed too.
+
+set -e
+[ -n "$ROCKET_DEBUG" ] && set -x || Q="-q"
+
+# Keep sudo timestamp updated while rocket is running.
+if [ "$1" = "--sudo-wait" ]; then
+  while true; do
+    mkdir -p "/var/db/sudo/$SUDO_USER"
+    touch "/var/db/sudo/$SUDO_USER"
+    sleep 1
+  done
+  exit 0
+fi
+
+OS=""
+WSL=FALSE
+ROCKET_SUCCESS=""
+
+# Set colors
+BOLD='\033[1m'
+RED='\033[91m'
+GREEN='\033[92m'
+BLUE='\033[94m'
+ENDC='\033[0m'
+
+
+# ----------------------------  Output functions  ------------------------------
+
+
+error_msg() {
+  echo -e "${BOLD}${RED}!!! $*${ENDC}" >&2
+}
+
+cleanup() {
+  set +e
+  if [ -n "$ROCKET_SUDO_WAIT_PID" ]; then
+    sudo kill "$ROCKET_SUDO_WAIT_PID"
+  fi
+  sudo -k
+  rm -f "$CLT_PLACEHOLDER"
+  if [ -z "$ROCKET_SUCCESS" ]; then
+    echo
+    if [ -n "$ROCKET_STEP" ]; then
+      error_msg "$ROCKET_STEP FAILED"
+    else
+      error_msg "FAILED"
+    fi
+    if [ -z "$ROCKET_DEBUG" ]; then
+      error_msg "Run '$0 --debug' for debugging output."
+    fi
+  fi
+  echo
+}
+
+# Run the cleanup function above, if there is an error
+# or the user aborts the execution
+trap "cleanup" EXIT
+
+
+STDIN_FILE_DESCRIPTOR="0"
+[ -t "$STDIN_FILE_DESCRIPTOR" ] && ROCKET_INTERACTIVE="1"
+
+
+abort() {
+  ROCKET_STEP=""
+  error_msg "$*"
+  exit 1
+}
+
+log() {
+  ROCKET_STEP="$*"
+  echo -e "${BLUE}==>${ENDC} ${BOLD}$*${ENDC}"
+}
+
+logn()  { 
+  ROCKET_STEP="$*"
+  printf -- "${BLUE}==>${ENDC} ${BOLD}%s:${ENDC} " "$*"
+}
+
+logk()  {
+  ROCKET_STEP=""
+  echo -e "${GREEN}OK${ENDC}"
+  echo
+}
+
+
+# ----------------------------  Main functions  --------------------------------
+
+
+# Function to get the root user access
+get_root() {
+  # Get the full path of the script
+  ROCKET_FULL_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+
+  # Initialise sudo now to save prompting later.
+  log "Enter your password (for sudo access)"
+  sudo -k
+  sudo /usr/bin/true
+  [ -f "$ROCKET_FULL_PATH" ]
+  sudo bash "$ROCKET_FULL_PATH" --sudo-wait &
+  ROCKET_SUDO_WAIT_PID="$!"
+  ps -p "$ROCKET_SUDO_WAIT_PID" &>/dev/null
+  logk
+}
+
+
+# Function to check the operating system and the version
+check_os() {
+  if [ "$(uname)" == "Darwin" ]; then
+    OS="macOS"
+    logn "Checking macOS version:"
+    version="$(sw_vers -productVersion)"
+    if [ "$(echo $version '>' 10.9 | bc)" -eq 1 ]; then
+    else
+        abort "Please run ROCKET on macOS version greater 10.9!"
+    fi
+  elif [ "$(uname)" == "Linux" ]; then
+    distro="$(lsb_release -si)"
+    version="$(lsb_release -sr)"
+    if grep -q Microsoft /proc/version; then
+      WSL=TRUE
+    fi
+    if [ "$distro" != "Ubuntu" ] && [ "$distro" != "Debian" ]; then
+      abort "Currently we only support Ubuntu and Debian."
+    else
+    fi
+    OS="Linux"
+  elif [ "$(uname -s)" == "Windows" ]; then
+    OS="Windows"
+  else
+    abort "Currently we only support macOS, Ubuntu/Debian and Windows from the WSL2 (also here only Ubuntu/Debian)."
+  fi
+  logk
+}
+
+
+# Function to check and enable full-disk encryption.
+check_disk_encryption() {
+  logn "Checking full-disk encryption status"
+  if fdesetup status | grep $Q -E "FileVault is (On|Off, but will be enabled after the next restart)."; then
+    logk
+  elif [ -n "$ROCKET_CI" ]; then
+    logn "Skipping full-disk encryption for CI"
+  elif [ -n "$ROCKET_INTERACTIVE" ]; then
+    log "Enabling full-disk encryption on next reboot:"
+    sudo fdesetup enable -user "$USER" \
+      | tee ~/Desktop/"FileVault Recovery Key.txt"
+    logk
+  else
+    abort "Run 'sudo fdesetup enable -user \"$USER\"' to enable full-disk encryption."
+  fi
+}
+
+
+# Function to check if the Xcode license is agreed to and agree if not.
+xcode_license() {
+  if /usr/bin/xcrun clang 2>&1 | grep $Q license; then
+    if [ -n "$ROCKET_INTERACTIVE" ]; then
+      logn "Asking for Xcode license confirmation"
+      sudo xcodebuild -license
+      logk
+    else
+      abort "Run 'sudo xcodebuild -license' to agree to the Xcode license."
+    fi
+  fi
+}
+
+
+# Function to install the Xcode Command Line Tools.
+install_xcode_commandline_tools() {
+  ROCKET_DIR=$("xcode-select" -print-path 2>/dev/null || true)
+  if [ -z "$ROCKET_DIR" ] || ! [ -f "$ROCKET_DIR/usr/bin/git" ] \
+                          || ! [ -f "/usr/include/iconv.h" ]
+  then
+    log "Installing the Xcode Command Line Tools"
+    CLT_PLACEHOLDER="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+    sudo touch "$CLT_PLACEHOLDER"
+    CLT_PACKAGE=$(softwareupdate -l | \
+                  grep -B 1 -E "Command Line (Developer|Tools)" | \
+                  awk -F"*" '/^ +\*/ {print $2}' | sed 's/^ *//' | head -n1)
+    sudo softwareupdate -i "$CLT_PACKAGE"
+    sudo rm -f "$CLT_PLACEHOLDER"
+    if ! [ -f "/usr/include/iconv.h" ]; then
+      if [ -n "$ROCKET_INTERACTIVE" ]; then
+        logn "Requesting user install of Xcode Command Line Tools"
+        xcode-select --install
+      else
+        abort "Run 'xcode-select --install' to install the Xcode Command Line Tools."
+      fi
+    fi
+    logk
+  fi
+
+  xcode_license
+}
+
+
+# Function to setup Homebrew directory and permissions.
+install_homebrew() {
+  logn "Checking for Homebrew installation"
+  HOMEBREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
+  [ -n "$HOMEBREW_PREFIX" ] || HOMEBREW_PREFIX="/usr/local"
+  [ -d "$HOMEBREW_PREFIX" ] || sudo mkdir -p "$HOMEBREW_PREFIX"
+  #sudo chown "root:wheel" "$HOMEBREW_PREFIX"
+  (
+    cd "$HOMEBREW_PREFIX"
+    sudo mkdir -p               Cellar Frameworks bin etc include lib opt sbin share var
+    sudo chown -R "$USER:admin" Cellar Frameworks bin etc include lib opt sbin share var
+  )
+
+  HOMEBREW_REPOSITORY="$(brew --repository 2>/dev/null || true)"
+  [ -n "$HOMEBREW_REPOSITORY" ] || HOMEBREW_REPOSITORY="/usr/local/Homebrew"
+  [ -d "$HOMEBREW_REPOSITORY" ] || sudo mkdir -p "$HOMEBREW_REPOSITORY"
+  sudo chown -R "$USER:admin" "$HOMEBREW_REPOSITORY"
+
+  if [ $HOMEBREW_PREFIX != $HOMEBREW_REPOSITORY ]
+  then
+    ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
+  fi
+
+  # Download Homebrew.
+  export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
+  [ -d "$GIT_DIR" ] && HOMEBREW_EXISTING="1"
+  git init $Q
+  git config remote.origin.url "https://github.com/Homebrew/brew"
+  git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+  if [ -n "$HOMEBREW_EXISTING" ]; then
+    git fetch $Q
+  else
+    git fetch $Q --no-tags --depth=1 --force --update-shallow
+  fi
+  git reset $Q --hard origin/master
+  unset GIT_DIR GIT_WORK_TREE HOMEBREW_EXISTING
+  logk
+}
+
+
+# Function to install Python
+install_python() {
+  logn "Checking for Python installation"
+  if [[ "$OS" == "macOS" ]]; then
+    if ! brew list python3 > /dev/null 2>&1
+    then
+        echo -e "${BLUE}Installing Python 3.x${ENDC}"
+        brew install python3
+        logk
+    else
+        logk
+    fi
+  elif [[ "$OS" == "Linux" ]]; then
+    if command -v python3 &>/dev/null; then
+      logk
+    else
+      apt-get update
+      apt-get install -y net-tools
+      apt-get install -y python3
+      apt-get install -y python3-pip
+      logk
+    fi
+  fi
+}
+
+
+# Function to install Ansible (using pip is the officially supported way)
+install_ansible() {
+  logn "Checking for Ansible installation"
+  if ! pip3 show ansible > /dev/null 2>&1
+  then
+      echo -e "${BLUE}Installing Ansible${ENDC}"
+      pip3 install ansible
+      if [ WSL === true ]; then
+        pip3 install pywinrm
+      fi
+  fi
+  logk
+}
+
+
+# Function to install Ansible roles via Ansable galaxy
+install_ansible_galaxy() {
+  logn "Checking for Ansible galaxy roles"
+  result=$(
+    { stdout=$(ansible-galaxy install --roles-path $ROCKET_ROOT/ansible/roles -r $ROCKET_ROOT/ansible/requirements.yml); returncode=$?; } 2>&1
+    printf "++++"
+    printf "%s\n" "$stdout"
+    exit "$returncode"
+  )
+  returncode=$?
+
+  var_out=${result#*++++}
+  var_err=${result%++++*}
+
+  if [ -n "$var_err" ]; then
+    echo 
+    abort "$var_err"
+  else
+    echo -e "\n$var_out"
+  fi
+
+  #[ -n "$ANSIBLE_GALAXY_RESULT" ] || abort "Error could not install ansible galaxy roles" && logk
+}
+
+
+
+
+
+# ----------------------------  MAIN  ------------------------------------------
+
+
+if [ -z "${ROCKET_HEADER}" ]; then
+  echo -e "${BOLD}ROCKET LAUNCH - Boostrap${ENDC}"
+  echo "-------------------------------------"
+  echo
+fi
+
+# Get the root user access
+get_root
+
+check_os
+
+if [ OS == "Darwin" ]; then
+  # Check if full-disk encryption is enabled.
+  #check_disk_encryption
+
+  # Install the Xcode Command Line Tools.
+  install_xcode_commandline_tools
+
+  # Download Homebrew.
+  install_homebrew
+fi
+
+# Install Python
+install_python
+
+# Install Ansible
+install_ansible
+
+# Install Ansible galaxy roles
+install_ansible_galaxy
+
+ROCKET_SUCCESS="1"
+
+
+echo
+echo -e "${BOLD}Your system is now READY!${ENDC}"
+echo

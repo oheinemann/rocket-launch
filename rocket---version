@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Summary: Display the version of rocket
+#
+# Displays the version number of this rocket release, including the
+# current revision from git, if available.
+#
+# The format of the git revision is:
+#   <version>-<num_commits>-<git_sha>
+# where `num_commits` is the number of commits since `version` was
+# tagged.
+
+set -e
+[ -n "$ROCKET_DEBUG" ] && set -x
+
+cd "$ROCKET_ROOT"
+if [ -f VERSION ]; then
+  version=`cat VERSION`
+fi
+git_revision="$(git describe --tags HEAD 2>/dev/null || true)"
+git_revision="${git_revision#v}"
+
+echo -e "${BOLD}ROCKET LAUNCH - Version${ENDC}"
+echo "-------------------------------------"
+echo
+echo "v${git_revision:-$version}"
+echo
