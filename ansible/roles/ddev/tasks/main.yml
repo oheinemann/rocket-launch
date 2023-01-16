@@ -1,0 +1,103 @@
+---
+# tasks file for ddev
+
+- name: Get Windows hostname
+  setup:
+    filter: ansible_hostname
+  delegate_to: "{{ ansible_default_ipv4.address }}"
+
+
+# wsl2 ?
+#   - docker desktop
+#   - mkcert
+
+- name: Install Docker Desktop on Windows with chocolatey
+  win_chocolatey:
+    name: Docker-Desktop
+    state: present
+  when: ansible_os_family == "Windows"
+
+
+- name: Install Docker Desktop on Windows with chocolatey
+  win_chocolatey:
+    name: Docker-Desktop
+    version: 2.3.0.2
+    source: 'https://chocolatey.org/api/v2'
+    state: present
+  when: ansible_os_family == "Windows"
+
+- name: Install chocolatey on Windows
+  win_shell: iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+  when: ansible_os_family == "Windows"
+
+
+- name: Install chocolatey on Windows
+  win_command: powershell Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+  when: ansible_os_family == "Windows"
+
+
+# macOS ?
+#   - docker desktop
+#   - mkcert
+#   - brew install drud/ddev/ddev
+
+
+- name: Install DDEV on macOS and Windows WSL2
+  hosts: all
+  gather_facts: true
+  become: yes
+  vars:
+    ddev_version: "1.22.0"
+    ddev_os: "macos"
+  tasks:
+  - name: Check for macOS or Windows WSL2
+    fail:
+      msg: "This role only supports macOS and Windows WSL2"
+    when: ansible_os_family != "Darwin" and ansible_distribution != "Windows"
+  - name: Install dependencies on macOS
+    shell: |
+      brew install curl
+      brew install docker
+      brew install composer
+    when: ansible_os_family == "Darwin"
+
+  - name: Install dependencies on Windows WSL2
+    shell: |
+      sudo apt-get update
+      sudo apt-get install curl -y
+      sudo apt-get install docker.io -y
+      sudo apt-get install composer -y
+    when: ansible_distribution == "Windows"
+
+  - name: Download and install DDEV
+    shell: |
+      curl -s -o ddev https://github.com/drud/ddev/releases/download/v{{ ddev_version }}/ddev_{{ ddev_os }}_x86_64
+      chmod +x ddev
+      sudo mv ddev /usr/local/bin/
+
+
+- name: Check if host is running WSL2
+  powershell: "((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux).State) -eq 'Enabled'"
+  register: wsl2_enabled
+
+
+- name: Install dependencies on Windows WSL2
+    shell: |
+      sudo apt-get update
+      sudo apt-get install curl -y
+      sudo apt-get install docker.io -y
+      sudo apt-get install composer -y
+    when: ansible_os_family == "Windows" and wsl2_enabled.stdout == "True"
+
+- name: Check if WSL2 distribution
+  shell: "grep -q Microsoft /proc/version"
+  register: wsl2_distribution
+
+
+- name: Install dependencies on WSL2
+    shell: |
+      sudo apt-get update
+      sudo apt-get install curl -y
+      sudo apt-get install docker.io -y
+      sudo apt-get install composer -y
+    when: ansible_os_family == "Windows" and wsl2_distribution.rc == 0 and ansible_distribution == "Ubuntu"

@@ -1,0 +1,14 @@
+---
+- name: Gather facts
+  hosts: localhost
+  gather_facts: true
+  
+  tasks:
+    - name: Get facts from WSL2 distribution
+      debug:
+        var: ansible_facts
+
+    - name: Get facts from Windows host
+      setup:
+        filter: ansible_*
+      delegate_to: "{{ ansible_default_ipv4.address }}"
