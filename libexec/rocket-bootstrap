@@ -125,6 +125,7 @@ check_os() {
       abort "Please run ROCKET on macOS version greater 10.9!"
     fi
   elif [ "$(uname)" == "Linux" ]; then
+    OS="Linux"
     distro="$(lsb_release -si)"
     version="$(lsb_release -sr)"
     if grep -q Microsoft /proc/version; then
@@ -132,9 +133,7 @@ check_os() {
     fi
     if [ "$distro" != "Ubuntu" ] && [ "$distro" != "Debian" ]; then
       abort "Currently we only support Ubuntu and Debian."
-    else
     fi
-    OS="Linux"
   elif [ "$(uname -s)" == "Windows" ]; then
     OS="Windows"
   else
