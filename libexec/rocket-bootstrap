@@ -184,7 +184,7 @@ install_xcode_commandline_tools() {
     log "Installing the Xcode Command Line Tools"
     CLT_PLACEHOLDER="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
     sudo touch "$CLT_PLACEHOLDER"
-    CLT_PACKAGE=$(softwareupdate -l | \
+    CLT_PACKAGE=$(softwareupdate -l --no-scan | \
                   grep -B 1 -E "Command Line (Developer|Tools)" | \
                   awk -F"*" '/^ +\*/ {print $2}' | sed 's/^ *//' | head -n1)
     sudo softwareupdate -i "$CLT_PACKAGE"
