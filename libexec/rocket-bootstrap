@@ -182,20 +182,23 @@ install_xcode_commandline_tools() {
                           || ! [ -f "/usr/include/iconv.h" ]
   then
     log "Installing the Xcode Command Line Tools"
-    CLT_PLACEHOLDER="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
-    sudo touch "$CLT_PLACEHOLDER"
-    CLT_PACKAGE=$(softwareupdate -l --no-scan | \
-                  grep -B 1 -E "Command Line (Developer|Tools)" | \
-                  awk -F"*" '/^ +\*/ {print $2}' | sed 's/^ *//' | head -n1)
-    sudo softwareupdate -i --no-scan "$CLT_PACKAGE"
-    sudo rm -f "$CLT_PLACEHOLDER"
-    if ! [ -f "/usr/include/iconv.h" ]; then
+#    CLT_PLACEHOLDER="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+#    sudo touch "$CLT_PLACEHOLDER"
+#    CLT_PACKAGE=$(softwareupdate -l --no-scan | \
+#                  grep -B 1 -E "Command Line (Developer|Tools)" | \
+#                  awk -F"*" '/^ +\*/ {print $2}' | sed 's/^ *//' | head -n1)
+#    sudo softwareupdate -i --no-scan "$CLT_PACKAGE"
+#    sudo rm -f "$CLT_PLACEHOLDER"
+#    if ! [ -f "/usr/include/iconv.h" ]; then
+    if ! [ $(xcode-select -p 1>/dev/null;echo $?) ]; then
       if [ -n "$ROCKET_INTERACTIVE" ]; then
         logn "Requesting user install of Xcode Command Line Tools"
         xcode-select --install
       else
         abort "Run 'xcode-select --install' to install the Xcode Command Line Tools."
       fi
+    else
+      log "Already installed."
     fi
     logk
   fi
