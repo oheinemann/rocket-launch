@@ -187,7 +187,7 @@ install_xcode_commandline_tools() {
     CLT_PACKAGE=$(softwareupdate -l --no-scan | \
                   grep -B 1 -E "Command Line (Developer|Tools)" | \
                   awk -F"*" '/^ +\*/ {print $2}' | sed 's/^ *//' | head -n1)
-    sudo softwareupdate -i "$CLT_PACKAGE"
+    sudo softwareupdate -i --no-scan "$CLT_PACKAGE"
     sudo rm -f "$CLT_PLACEHOLDER"
     if ! [ -f "/usr/include/iconv.h" ]; then
       if [ -n "$ROCKET_INTERACTIVE" ]; then
