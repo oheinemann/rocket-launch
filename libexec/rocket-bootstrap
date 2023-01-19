@@ -327,7 +327,7 @@ get_root
 
 check_os
 
-if [ OS == "macOS" ]; then
+if [[ "$OS" == "macOS" ]]; then
   # Check if full-disk encryption is enabled.
   #check_disk_encryption
 
