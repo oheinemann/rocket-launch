@@ -43,7 +43,7 @@ error_msg() {
 cleanup() {
   set +e
   if [ -n "$ROCKET_SUDO_WAIT_PID" ]; then
-    sudo kill "$ROCKET_SUDO_WAIT_PID" > /dev/null 2>&1
+    sudo kill "$ROCKET_SUDO_WAIT_PID"
   fi
   sudo -k
   rm -f "$CLT_PLACEHOLDER"
@@ -327,7 +327,7 @@ get_root
 
 check_os
 
-if [ OS == "Darwin" ]; then
+if [ OS == "macOS" ]; then
   # Check if full-disk encryption is enabled.
   #check_disk_encryption
 
