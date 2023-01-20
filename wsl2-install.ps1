@@ -287,6 +287,7 @@ function Install-Distro ($distro) {
     }
     function Add-WSLAppx ($distro) {
         $Filename = "$env:temp\" + "$($distro.AppxName).appx"
+        Write-Host("Filename: $Filename")
         $abortInstall = $false
         if (($distro.sideloadreqd -eq $true) -and (!(Check-Sideload))){
             Write-Host ("Sideloading must be turned on in order to install $($distro.Name)")
@@ -302,6 +303,7 @@ function Install-Distro ($distro) {
         if ($abortInstall -eq $false) {
             Write-Host(" ...Downloading " + $distro.Name + ".")
             if ($distro.URI.Length -lt 2) {
+                Write-Host(" StoreLink? ")
                 $distro = Get-StoreDownloadLink($distro) # Handle dynamic URIs
             }
             $client = New-Object net.WebClient
@@ -321,6 +323,7 @@ function Install-Distro ($distro) {
         Write-Host(" ...Found an existing " + $distro.Name + " install")
     } else {
         if ($($distro.AppxName).Length -gt 1){
+            Write-Host("WSLAppx ?")
             Add-WSLAppx($distro)
         } else {
             Import-WSL($distro)
