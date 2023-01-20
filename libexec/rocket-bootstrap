@@ -243,6 +243,33 @@ install_homebrew() {
   logk
 }
 
+install_path() {
+  logn "Install path to the shell"
+  # check which shell is used
+  if [ "$SHELL" = "/bin/bash" ]; then
+    SHELL_CONFIG=~/.bashrc
+  elif [ "$SHELL" = "/bin/sh" ]; then
+    SHELL_CONFIG=~/.profile
+  elif [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ]; then
+    SHELL_CONFIG=~/.zshrc
+  fi
+
+  # check if the bin path is already in the config file
+  if grep -q "^export PATH=.*$ROCKET_BIN" $SHELL_CONFIG; then
+      echo "Verzeichnis $ROCKET_BIN ist bereits in $SHELL_CONFIG gespeichert."
+  else
+      # adding path to the config file
+      echo "export PATH=\"$ROCKET_BIN:\$PATH\"" >> $SHELL_CONFIG
+  fi
+
+  # check if path is already added to the env variable
+  if [[ ":$PATH:" != *":$ROCKET_BIN:"* ]]; then
+      # adding path to the env variable
+      export PATH="$ROCKET_BIN:$PATH"
+  fi
+  logk
+}
+
 
 # Function to install Python
 install_python() {
@@ -261,10 +288,13 @@ install_python() {
       logk
     else
       apt-get update
-      apt-get install -y net-tools
       apt-get install -y python3
       apt-get install -y python3-pip
       logk
+    fi
+
+    if [[ WSL === true ]]; then
+      apt-get install -y net-tools
     fi
   fi
 }
@@ -277,7 +307,7 @@ install_ansible() {
   then
       echo -e "${BLUE}Installing Ansible${ENDC}"
       pip3 install ansible
-      if [ WSL === true ]; then
+      if [[ WSL === true ]]; then
         pip3 install pywinrm
       fi
   fi
@@ -337,6 +367,9 @@ if [[ "$OS" == "macOS" ]]; then
   # Download Homebrew.
   install_homebrew
 fi
+
+# Install path to binary
+install_path
 
 # Install Python
 install_python

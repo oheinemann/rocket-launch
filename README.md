@@ -18,11 +18,30 @@ As a Windows subsystem Linux, the project also provides everything necessary on 
 - Installs [Homebrew Cask](https://github.com/caskroom/homebrew-cask) (for installing graphical software)
 - Idempotent
 
-## Quick Start
+
+# WSL2setup
+
+This script allows you to quickly get up and running with WSL2 on Windows 10 Build 2004.
+This script allows allows for easy install of various Linux distros.
+
+## Quickstart on Winndows
+
+To quickly get up and running with WSL2, open a new PowerShell window as "Admin" and run the following one-liner:
+
+```posh
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/oheinemann/rocket-launch/main/wsl2-install.ps1'))
+```
+
+You will have to run this one-liner twice.
+* Once to install Windows pre-requisites
+* Once after the computer re-boots to update the WSL2 kernel and install a WSL distro (Ubuntu 18.04 recommended)
+
+
+## Quickstart on Linux/Mac
 
 Run the following command in your Terminal to install and bootstrap ROCKET LAUNCH:
 
 ```bash
-curl -s https://raw.githubusercontent.com/oheinemann/rocket-launch/master/install.sh | bash
+curl -s https://raw.githubusercontent.com/oheinemann/rocket-launch/main/install.sh | bash
 
 ```
