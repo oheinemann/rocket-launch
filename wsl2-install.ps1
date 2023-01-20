@@ -269,11 +269,15 @@ function Select-Distro () {
 function Install-Distro ($distro) {
     function Import-WSL ($distro) {
         $distroinstall = "$env:LOCALAPPDATA\lxss"
+        Write-Host("Distroinstall: $distroinstall")
         $wslname = $($distro.Name).Replace(" ", "-")
+        Write-Host("WSL Name: $wslname")
         $Filename = "$env:temp\" + $wslname + ".rootfs.tar.gz"
+        Write-Host("Filename: $Filename")
         Write-Host(" ...Downloading " + $distro.Name + ".")
         $client = New-Object net.WebClient
         $client.DownloadFile($distro.URI, $Filename)
+        Write-Host("Distro URI: $distro.URI --> $Filename")
         if (Test-Path $Filename){
             Write-Host(" ...Importing " + $distro.Name + ".")
             wsl.exe --import $wslname $distroinstall $Filename
