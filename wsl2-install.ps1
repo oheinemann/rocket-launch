@@ -165,31 +165,24 @@ function Select-Distro () {
     # You can also use https://store.rg-adguard.net to get Appx links from Windows Store links
     $distrolist = (
         [PSCustomObject]@{
-            'Name' = 'Ubuntu 22.04'
+            'Name' = 'Ubuntu 22.04 LTS'
             'URI' = 'https://aka.ms/wslubuntu2204'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu22.04onWindows'
             'winpe' = 'ubuntu2204.exe'
             'installed' = $false
         },
         [PSCustomObject]@{
-            'Name' = 'Ubuntu 20.04'
+            'Name' = 'Ubuntu 20.04 LTS'
             'URI' = 'https://aka.ms/wslubuntu2004'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
             'winpe' = 'ubuntu2004.exe'
             'installed' = $false
         },
         [PSCustomObject]@{
-            'Name' = 'Ubuntu 18.04'
+            'Name' = 'Ubuntu 18.04 LTS'
             'URI' = 'https://aka.ms/wsl-ubuntu-1804'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu18.04onWindows'
             'winpe' = 'ubuntu1804.exe'
-            'installed' = $false
-        },
-        [PSCustomObject]@{
-            'Name' = 'Ubuntu 16.04'
-            'URI' = 'https://aka.ms/wsl-ubuntu-1604'
-            'AppxName' = 'CanonicalGroupLimited.Ubuntu16.04onWindows'
-            'winpe' = 'ubuntu1604.exe'
             'installed' = $false
         },
         [PSCustomObject]@{
@@ -250,13 +243,6 @@ function Select-Distro () {
             'installed' = $false
             'sideloadreqd' = $true
         }
-        # [PSCustomObject]@{
-        #     'Name' = 'Ubuntu 20.04'
-        #     'URI' = 'https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64-wsl.rootfs.tar.gz'
-        #     'AppxName' = '' # Leave blank for wsl --import install
-        #     'winpe' = ''
-        #     'installed' = $false
-        # }
     )
     $distrolist | ForEach-Object { $_.installed = Get-WSLExistance($_) }
     Write-Host("+------------------------------------------------+")
@@ -354,9 +340,11 @@ if (!(Get-WindowsCapability -Name OpenSSH.Server* -Online)) {
 }
 
 # Check if firewall rule for SSH is enabled for WSL2 clients only
-if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP-WSL2")) {
+try{
+    $Rule = Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP-WSL2"
+}catch{
     Write-Output "Firewall rule for SSH is not enabled for WSL2 clients only. Enabling now..."
-    New-NetFirewallRule -Name "OpenSSH-Server-In-TCP-WSL2" -DisplayName "OpenSSH Server (TCP-In) WSL2" -Description "Inbound rule for OpenSSH Server for WSL2 clients only" -Protocol TCP -LocalPort 22 -Action Allow -Enabled True -Profile Domain, Private -RemoteAddress LocalSubnet
+    New-NetFirewallRule -Name "OpenSSH-Server-In-TCP-WSL2" -DisplayName "OpenSSH Server (TCP-In) WSL2" -Description "Inbound rule for OpenSSH Server for WSL2 clients only" -Protocol TCP -LocalPort 22 -Action Allow -Enabled True -Profile Domain,Private -RemoteAddress LocalSubnet
 }
 
 # Check if WinRM is enabled
