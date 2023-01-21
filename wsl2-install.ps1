@@ -172,17 +172,24 @@ function Select-Distro () {
             'installed' = $false
         },
         [PSCustomObject]@{
-            'Name' = 'Ubuntu 20.04 LTS'
+            'Name' = 'Ubuntu 20.04'
             'URI' = 'https://aka.ms/wslubuntu2004'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
             'winpe' = 'ubuntu2004.exe'
             'installed' = $false
         },
         [PSCustomObject]@{
-            'Name' = 'Ubuntu 18.04 LTS'
+            'Name' = 'Ubuntu 18.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1804'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu18.04onWindows'
             'winpe' = 'ubuntu1804.exe'
+            'installed' = $false
+        },
+        [PSCustomObject]@{
+            'Name' = 'Ubuntu 16.04'
+            'URI' = 'https://aka.ms/wsl-ubuntu-1604'
+            'AppxName' = 'CanonicalGroupLimited.Ubuntu16.04onWindows'
+            'winpe' = 'ubuntu1604.exe'
             'installed' = $false
         },
         [PSCustomObject]@{
