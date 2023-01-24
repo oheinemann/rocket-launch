@@ -22,8 +22,8 @@ inventoryString = """{
     "windows": {
         "vars": {
             "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
-            "ansible_user": "oliver heinemann",
-            "ansible_password": "Maren2019!",
+            "ansible_user": "",
+            "ansible_password": "",
             "ansible_shell_type": "cmd",
             "ansible_connection": "ssh"
         }
@@ -32,6 +32,7 @@ inventoryString = """{
 inventory = json.loads(inventoryString)
 
 hosts = check_output("arp -a", shell=True).decode("utf-8").split("\n")
+
 
 if len(hosts) > 0:
     for host in hosts:
