@@ -298,7 +298,7 @@ install_python() {
 
     if ! command -v pip3 &>/dev/null; then
       apt-get install -y python3-pip
-    else
+    fi
 
     if [[ "$WSL" == true ]]; then
       apt-get install -y net-tools
