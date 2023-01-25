@@ -291,18 +291,19 @@ install_python() {
         logk
     fi
   elif [[ "$OS" == "Linux" ]]; then
-    if command -v python3 &>/dev/null; then
-      logk
-    else
-      apt-get update
+    apt-get update
+    if ! command -v python3 &>/dev/null; then
       apt-get install -y python3
-      apt-get install -y python3-pip
-      logk
     fi
+
+    if ! command -v pip3 &>/dev/null; then
+      apt-get install -y python3-pip
+    else
 
     if [[ "$WSL" == true ]]; then
       apt-get install -y net-tools
     fi
+    logk
   fi
 }
 
