@@ -296,7 +296,7 @@ install_python() {
       logk
     fi
 
-    if [[ WSL === true ]]; then
+    if [[ "$WSL" === true ]]; then
       apt-get install -y net-tools
     fi
   fi
