@@ -392,13 +392,15 @@ if ($rebootRequired) {
         $pass = Read-Host 'What is your password?' -AsSecureString
         if ($distro.sideloadreqd){
             if (Check-Sideload){
-                Start-Process $distro.winpe
+                $processOptions = @{
+                    FilePath = $Distro.winpe
+                    ArgumentList = ' config --default-user root'
+                }
             }
         } else {
-            #Start-Process $distro.winpe
-            wsl.exe -d $Distro.Name -u root useradd --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$pass" $user
-            wsl.exe -d $Distro.Name -u root -e bash -c "touch /etc/wsl.conf && if ! fgrep '[boot]' /etc/wsl.conf >/dev/null; then printf '\n[boot]\nsystemd=true\n' >>/etc/wsl.conf; fi"
-            wsl.exe -d $Distro.Name -u root -e bash -c "touch /etc/wsl.conf && if ! fgrep '[user]' /etc/wsl.conf >/dev/null; then printf '\n[user]\ndefault=$user\n' >>/etc/wsl.conf; fi"
+#            wsl.exe -d $Distro.Name -u root useradd --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$pass" $user
+#            wsl.exe -d $Distro.Name -u root -e bash -c "touch /etc/wsl.conf && if ! fgrep '[boot]' /etc/wsl.conf >/dev/null; then printf '\n[boot]\nsystemd=true\n' >>/etc/wsl.conf; fi"
+#            wsl.exe -d $Distro.Name -u root -e bash -c "touch /etc/wsl.conf && if ! fgrep '[user]' /etc/wsl.conf >/dev/null; then printf '\n[user]\ndefault=$user\n' >>/etc/wsl.conf; fi"
         }
     } else {
         $wslselect = ""
