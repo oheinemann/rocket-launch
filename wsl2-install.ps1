@@ -402,7 +402,7 @@ if ($rebootRequired) {
         } else {
             Start-Process $Distro.winpe -Wait
 
-            Write-Host("$user: $pass")
+            Write-Host("$user $pass")
             Write-Host("wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password \"$pass\" $user")
 
             wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$pass" $user
