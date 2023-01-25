@@ -104,7 +104,11 @@ get_root() {
   # Initialise sudo now to save prompting later.
   log "Enter your password (for sudo access)"
   sudo -k
-  sudo /usr/bin/true
+  if [[ "$OS" == "macOS" ]]; then
+    sudo /usr/bin/true
+  else
+    sudo /bin/true
+  fi
   [ -f "$ROCKET_FULL_PATH" ]
   sudo bash "$ROCKET_FULL_PATH" --sudo-wait &
   ROCKET_SUDO_WAIT_PID="$!"
@@ -355,10 +359,10 @@ if [ -z "${ROCKET_HEADER}" ]; then
   echo
 fi
 
+check_os
+
 # Get the root user access
 get_root
-
-check_os
 
 if [[ "$OS" == "macOS" ]]; then
   # Check if full-disk encryption is enabled.
