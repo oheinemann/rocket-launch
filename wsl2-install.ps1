@@ -390,10 +390,11 @@ if ($rebootRequired) {
     if ($distro.AppxName.Length -gt 1) {
         $user = Read-Host 'What is your username?'
         $pass = Read-Host 'What is your password?' -AsSecureString
+        $plainPwd =[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($pass))
         if ($distro.sideloadreqd){
             if (Check-Sideload){
                 Start-Process $Distro.winpe -Wait
-                wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$pass" $user
+                wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$plainPwd" $user
                 wsl.exe -d $Distro.Name -u root -e bash -c "touch /etc/wsl.conf && if ! fgrep '[boot]' /etc/wsl.conf >/dev/null; then printf '\n[boot]\nsystemd=true\n' >>/etc/wsl.conf; fi && if ! fgrep '[user]' /etc/wsl.conf >/dev/null; then printf '\n[user]\ndefault=$user\n' >>/etc/wsl.conf; fi"
                 wsl.exe -d $Distro.Name -u root -e bash -c "apt update && apt install -y curl lsb-release git"
 
@@ -402,10 +403,10 @@ if ($rebootRequired) {
         } else {
             Start-Process $Distro.winpe -Wait
 
-            Write-Host($user + ": " + $pass)
-            Write-Output "wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password \"$pass\" $user"
+            Write-Host($user + ": " + $plainPwd)
+            Write-Output "wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password \"$plainPwd\" $user"
 
-            wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$pass" $user
+            wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$plainPwd" $user
             wsl.exe -d $Distro.Name -u root -e bash -c "touch /etc/wsl.conf && if ! fgrep '[boot]' /etc/wsl.conf >/dev/null; then printf '\n[boot]\nsystemd=true\n' >>/etc/wsl.conf; fi && if ! fgrep '[user]' /etc/wsl.conf >/dev/null; then printf '\n[user]\ndefault=$user\n' >>/etc/wsl.conf; fi"
             wsl.exe -d $Distro.Name -u root -e bash -c "apt update && apt install -y curl lsb-release git"
 
