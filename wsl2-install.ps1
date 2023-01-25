@@ -404,9 +404,9 @@ if ($rebootRequired) {
             Start-Process $Distro.winpe -Wait
 
             Write-Host($user + ": " + $plainPwd)
-            Write-Output "wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password \"$plainPwd\" $user"
+            Write-Host("wsl.exe -d " + $Distro.Name + " -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password \"" + $plainPwd "\" " + $user)
 
-            wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password "$plainPwd" $user
+            wsl.exe -d $Distro.Name -u root useradd --shell /bin/bash --badnames --create-home --user-group --groups adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev,netdev --password $plainPwd $user
             wsl.exe -d $Distro.Name -u root -e bash -c "touch /etc/wsl.conf && if ! fgrep '[boot]' /etc/wsl.conf >/dev/null; then printf '\n[boot]\nsystemd=true\n' >>/etc/wsl.conf; fi && if ! fgrep '[user]' /etc/wsl.conf >/dev/null; then printf '\n[user]\ndefault=$user\n' >>/etc/wsl.conf; fi"
             wsl.exe -d $Distro.Name -u root -e bash -c "apt update && apt install -y curl lsb-release git"
 
