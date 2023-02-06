@@ -252,26 +252,29 @@ install_homebrew() {
 
 install_path() {
   logn "Install path to the shell"
-  # check which shell is used
+  # path to the rocket binary
+  ROCKET_BIN="$HOME/.rocket-launch/bin"
+
+  # check which shell you are using
   if [ "$SHELL" = "/bin/bash" ]; then
-    SHELL_CONFIG=~/.bashrc
+      SHELL_CONFIG="$HOME/.bashrc"
   elif [ "$SHELL" = "/bin/sh" ]; then
-    SHELL_CONFIG=~/.profile
+      SHELL_CONFIG="$HOME/.profile"
   elif [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ]; then
-    SHELL_CONFIG=~/.zshrc
+      SHELL_CONFIG="$HOME/.zshrc"
   fi
 
-  # check if the bin path is already in the config file
+  # check if the path is already in your config
   if grep -q "^export PATH=.*$ROCKET_BIN" $SHELL_CONFIG; then
-      echo "Verzeichnis $ROCKET_BIN ist bereits in $SHELL_CONFIG gespeichert."
+      echo "Directory $ROCKET_BIN is already saved in $SHELL_CONFIG."
   else
-      # adding path to the config file
+      # adding the path to your config
       echo "export PATH=\"$ROCKET_BIN:\$PATH\"" >> $SHELL_CONFIG
   fi
 
-  # check if path is already added to the env variable
+  # check if the path is added to your environment variable
   if [[ ":$PATH:" != *":$ROCKET_BIN:"* ]]; then
-      # adding path to the env variable
+      # adding path to the environment
       export PATH="$ROCKET_BIN:$PATH"
   fi
   logk

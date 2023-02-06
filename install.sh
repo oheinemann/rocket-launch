@@ -127,6 +127,30 @@ check_git() {
 }
 
 
+# Function to install the Xcode Command Line Tools.
+install_xcode_commandline_tools() {
+  ROCKET_DIR=$("xcode-select" -print-path 2>/dev/null || true)
+  if [ -z "$ROCKET_DIR" ] || ! [ -f "$ROCKET_DIR/usr/bin/git" ] \
+                          || ! [ -f "/usr/include/iconv.h" ]
+  then
+    log "Installing the Xcode Command Line Tools"
+    if ! [ $(xcode-select -p 1>/dev/null;echo $?) ]; then
+      if [ -n "$ROCKET_INTERACTIVE" ]; then
+        logn "Requesting user install of Xcode Command Line Tools"
+        xcode-select --install
+      else
+        abort "Run 'xcode-select --install' to install the Xcode Command Line Tools."
+      fi
+    else
+      log "Already installed."
+    fi
+    logk
+  fi
+
+  xcode_license
+}
+
+
 # Function to clone or update the rocket-launch repository
 clone_repository() {
   local install_location="$2"
@@ -144,13 +168,44 @@ clone_repository() {
 }
 
 
+install_path() {
+  logn "Install path to the shell"
+  # path to the rocket binary
+  ROCKET_BIN="$HOME/.rocket-launch/bin"
+
+  # check which shell you are using
+  if [ "$SHELL" = "/bin/bash" ]; then
+      SHELL_CONFIG="$HOME/.bashrc"
+  elif [ "$SHELL" = "/bin/sh" ]; then
+      SHELL_CONFIG="$HOME/.profile"
+  elif [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ]; then
+      SHELL_CONFIG="$HOME/.zshrc"
+  fi
+
+  # check if the path is already in your config
+  if grep -q "^export PATH=.*$ROCKET_BIN" $SHELL_CONFIG; then
+      echo "Directory $ROCKET_BIN is already saved in $SHELL_CONFIG."
+  else
+      # adding the path to your config
+      echo "export PATH=\"$ROCKET_BIN:\$PATH\"" >> $SHELL_CONFIG
+  fi
+
+  # check if the path is added to your environment variable
+  if [[ ":$PATH:" != *":$ROCKET_BIN:"* ]]; then
+      # adding path to the environment
+      export PATH="$ROCKET_BIN:$PATH"
+  fi
+  logk
+}
+
+
 # ----------------------------  MAIN  ------------------------------------------
 
 
 # Show the "ROCKET" header
 show_header
 
-# Check the macOS version
+# Check the OS and version
 check_os
 
 # Check the current user
@@ -158,6 +213,12 @@ check_user
 
 # Check if git is installed
 check_git
+
+# we need command line tools for the git clone
+if [[ "$OS" == "macOS" ]]; then
+  # Install the Xcode Command Line Tools.
+  install_xcode_commandline_tools
+fi
 
 # Clone/Update the "ROCKET" repository into our home directory
 clone_repository "https://github.com/oheinemann/rocket-launch.git" "$HOME/.rocket-launch"
@@ -167,5 +228,6 @@ ROCKET_SUCCESS="1"
 export ROCKET_HEADER="1"
 
 # Add the bin path to the global path and bootstrap "rocket"
-export PATH="$HOME/.rocket-launch/bin:$PATH"
+install_path
+
 rocket bootstrap
