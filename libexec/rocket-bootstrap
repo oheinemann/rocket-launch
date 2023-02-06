@@ -332,7 +332,7 @@ install_ansible() {
 install_ansible_galaxy() {
   logn "Checking for Ansible galaxy roles"
   result=$(
-    { stdout=$(ansible-galaxy install -r $ROCKET_ROOT/ansible/requirements.yml); returncode=$?; } 2>&1
+    { stdout=$(ansible-galaxy install --roles-path $ROCKET_ROOT/ansible/roles -r $ROCKET_ROOT/ansible/requirements.yml); returncode=$?; } 2>&1
     printf "++++"
     printf "%s\n" "$stdout"
     exit "$returncode"
