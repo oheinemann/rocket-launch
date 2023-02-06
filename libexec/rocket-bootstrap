@@ -295,18 +295,18 @@ install_python() {
         logk
     fi
   elif [[ "$OS" == "Linux" ]]; then
-    sudo apt-get update
+    sudo apt-get -qq update
     if ! command -v python3 &>/dev/null; then
-      apt-get install -y python3
+      sudo apt-get install -y -qq python3
     fi
 
     if ! command -v pip3 &>/dev/null; then
-      apt-get install -y python3-pip
+      sudo apt-get install -y -qq python3-pip
       pip3 install psutil
     fi
 
     if [[ "$WSL" == true ]]; then
-      apt-get install -y net-tools
+      sudo apt-get install -y net-tools
     fi
     logk
   fi
