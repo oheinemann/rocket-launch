@@ -289,18 +289,20 @@ install_python() {
     then
         echo -e "${BLUE}Installing Python 3.x${ENDC}"
         brew install python3
+        pip3 install psutil
         logk
     else
         logk
     fi
   elif [[ "$OS" == "Linux" ]]; then
-    apt-get update
+    sudo apt-get update
     if ! command -v python3 &>/dev/null; then
       apt-get install -y python3
     fi
 
     if ! command -v pip3 &>/dev/null; then
       apt-get install -y python3-pip
+      pip3 install psutil
     fi
 
     if [[ "$WSL" == true ]]; then
