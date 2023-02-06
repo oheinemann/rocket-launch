@@ -127,6 +127,21 @@ check_git() {
 }
 
 
+
+# Function to check if the Xcode license is agreed to and agree if not.
+xcode_license() {
+  if /usr/bin/xcrun clang 2>&1 | grep $Q license; then
+    if [ -n "$ROCKET_INTERACTIVE" ]; then
+      logn "Asking for Xcode license confirmation"
+      sudo xcodebuild -license
+      logk
+    else
+      abort "Run 'sudo xcodebuild -license' to agree to the Xcode license."
+    fi
+  fi
+}
+
+
 # Function to install the Xcode Command Line Tools.
 install_xcode_commandline_tools() {
   ROCKET_DIR=$("xcode-select" -print-path 2>/dev/null || true)
