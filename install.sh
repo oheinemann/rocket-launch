@@ -235,6 +235,10 @@ if [[ "$OS" == "macOS" ]]; then
   install_xcode_commandline_tools
 fi
 
+if [ -d "$HOME/.rocket-launch" ]; then
+  rm -Rf "$HOME/.rocket-launch/"
+fi
+
 # Clone/Update the "ROCKET" repository into our home directory
 clone_repository "https://github.com/oheinemann/rocket-launch.git" "$HOME/.rocket-launch"
 
