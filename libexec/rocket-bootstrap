@@ -43,7 +43,7 @@ error_msg() {
 cleanup() {
   set +e
   if [ -n "$ROCKET_SUDO_WAIT_PID" ]; then
-    sudo kill "$ROCKET_SUDO_WAIT_PID"
+    sudo kill "$ROCKET_SUDO_WAIT_PID" > /dev/null &
   fi
   sudo -k
   rm -f "$CLT_PLACEHOLDER"
