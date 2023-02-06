@@ -287,12 +287,8 @@ install_python() {
   if [[ "$OS" == "macOS" ]]; then
     if ! brew list python3 > /dev/null 2>&1
     then
-        echo -e "${BLUE}Installing Python 3.x${ENDC}"
-        brew install python3
-        pip3 install psutil
-        logk
-    else
-        logk
+      echo -e "${BLUE}Installing Python 3.x${ENDC}"
+      brew install python3
     fi
   elif [[ "$OS" == "Linux" ]]; then
     sudo apt-get -q update
@@ -302,14 +298,16 @@ install_python() {
 
     if ! command -v pip3 &>/dev/null; then
       sudo apt-get install -y -q python3-pip
-      pip3 install psutil
     fi
 
     if [[ "$WSL" == true ]]; then
       sudo apt-get install -y -q net-tools
     fi
-    logk
   fi
+  if !(pip3 freeze | grep psutil &> /dev/null); then
+    pip3 install psutil
+  fi
+  logk
 }
 
 
