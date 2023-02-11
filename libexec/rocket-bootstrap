@@ -289,6 +289,8 @@ install_python() {
     then
       echo -e "${BLUE}Installing Python 3.x${ENDC}"
       brew install python3
+      python3 -m pip install --upgrade setuptools
+      python3 -m pip install --upgrade pip
     fi
   elif [[ "$OS" == "Linux" ]]; then
     sudo apt-get -q update
