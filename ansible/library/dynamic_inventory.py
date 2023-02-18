@@ -76,7 +76,7 @@ def make_inventory():
 
     print(mac)
 
-    inventory["all"]["children"][OS] = null
+    inventory["all"]["children"][OS] = Null
 
     local = { OS: {
         "hosts": {
@@ -110,7 +110,7 @@ def make_inventory():
         USER = input("Please add username of your WINDOWS HOST maschine: ")
         PASSWORD = getpass.getpass(prompt="Please add the password of your WINDOWS HOST maschine: ")
         inventory["windows"]["hosts"]["windows_host"] = {"ansible_host": win["ip"], "mac": win["mac"]}
-        inventory["all"]["children"]["windows"] = null
+        inventory["all"]["children"]["windows"] = Null
 
     with open(os.path.expanduser('~') + "/.rocket-launch/ansible/inventory.json", "w") as f:
         json.dump(inventory, f)
