@@ -21,6 +21,8 @@ if [ "$1" = "--sudo-wait" ]; then
   exit 0
 fi
 
+OS=""
+WSL=FALSE
 ROCKET_SUCCESS=""
 
 # Set colors
