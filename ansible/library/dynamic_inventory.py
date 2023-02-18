@@ -6,7 +6,6 @@ import subprocess
 import json
 import re
 import uuid
-import sys
 from subprocess import check_output
 import getpass
 
@@ -122,9 +121,6 @@ def make_inventory():
     with open(os.path.expanduser('~') + "/.rocket-launch/ansible/inventory.json", "w") as f:
         json.dump(inventory, f)
 
-    export = json.dumps(inventory)
-    print(export)
-    sys.stdout.write(str(export))
 
 if __name__ == "__main__":
     main()

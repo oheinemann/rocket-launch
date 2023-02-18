@@ -11,8 +11,6 @@
 set -e
 [ -n "$ROCKET_DEBUG" ] && set -x || Q="-q"
 
-echo "Root-Dir: $ROCKET_ROOT"
-
 # Keep sudo timestamp updated while ROCKET is running.
 if [ "$1" = "--sudo-wait" ]; then
   while true; do
@@ -232,8 +230,12 @@ run_install() {
       tag_str='-t $tags'
     fi
 
+    if [ ! -f $ROCKET_ROOT/ansible/inventory.json ]; then
+      python3 $ROCKET_ROOT/ansible/library/dynamic_inventory.py
+    fi
+
     log "Running Ansible playbook${ENDC} ${BLUE}$1 ($name.yml)"
-    ANSIBLE_CONFIG=$ROCKET_ROOT/ansible/ansible.cfg ansible-playbook -i $ROCKET_ROOT/ansible/library/dynamic_inventory.py $ROCKET_ROOT/ansible/main.yml $tag_str
+    ANSIBLE_CONFIG=$ROCKET_ROOT/ansible/ansible.cfg ansible-playbook -i $ROCKET_ROOT/ansible/inventory.json $ROCKET_ROOT/ansible/main.yml $tag_str
   fi
 }
 
