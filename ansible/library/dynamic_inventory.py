@@ -122,7 +122,9 @@ def make_inventory():
     with open(os.path.expanduser('~') + "/.rocket-launch/ansible/inventory.json", "w") as f:
         json.dump(inventory, f)
 
-    sys.stdout.write(str(json.dumps(inventory)))
+    export = json.dumps(inventory)
+    print(export)
+    sys.stdout.write(str(export))
 
 if __name__ == "__main__":
     main()
