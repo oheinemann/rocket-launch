@@ -14,7 +14,7 @@ OS = ""
 WSL = False
 USER = ""
 PASSWORD = ""
-
+HOSTNAME = "localhost"
 
 def main():
     check_os()
@@ -64,7 +64,7 @@ def check_os():
 
 
 def make_inventory():
-    global PASSWORD, USER
+    global PASSWORD, USER, HOSTNAME
     inventoryString = """{
         "all": {
             "children": {}
@@ -80,14 +80,14 @@ def make_inventory():
 
     local = { OS: {
         "hosts": {
-            "localhost": {}
-        },
-        "vars": {
-            "vars": {
-                "ansible_connection": "local",
-                "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+            HOSTNAME: {
+                "vars": {
+                    "ansible_connection": "local",
+                    "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
+                    "mac": mac
+                }
             }
-        }
+        },
     }}
  
     inventory.update(local)
@@ -95,27 +95,33 @@ def make_inventory():
     if WSL == True:
         inventory.update({"windows": {
             "hosts": {
-                "windows_host": {}
+                "windows_host": {
+                    "vars": {
+                        "ansible_host": None,
+                        "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
+                        "ansible_user": "",
+                        "ansible_password": "",
+                        "ansible_shell_type": "cmd",
+                        "ansible_connection": "ssh",
+                        "mac": None
+                    }
+                }
             },
-            "vars": {
-                "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
-                "ansible_user": "",
-                "ansible_password": "",
-                "ansible_shell_type": "cmd",
-                "ansible_connection": "ssh"
-            }
         }})
         win = get_windows()
         print("WSL2: " + win["ip"] + " -- " + win["mac"]) 
         USER = input("Please add username of your WINDOWS HOST maschine: ")
         PASSWORD = getpass.getpass(prompt="Please add the password of your WINDOWS HOST maschine: ")
-        inventory["windows"]["hosts"]["windows_host"] = {"ansible_host": win["ip"], "mac": win["mac"]}
+        inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_password"] = PASSWORD
+        inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_user"] = USER
+        inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_host"] = win["ip"]
+        inventory["windows"]["hosts"]["windows_host"]["vars"]["mac"] = win["mac"]
         inventory["all"]["children"]["windows"] = None
 
     with open(os.path.expanduser('~') + "/.rocket-launch/ansible/inventory.json", "w") as f:
         json.dump(inventory, f)
 
-
+    sys.stdout.write(str(json.dumps(inventory)))
 
 if __name__ == "__main__":
     main()
