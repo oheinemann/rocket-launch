@@ -96,19 +96,17 @@ def make_inventory():
         inventory.update({"windows": {
             "hosts": {
                 "windows_host": {
-                    {
-                        "ansible_host": None,
-                        "mac": None,
-                        "ansible_user": "",
-                        "ansible_password": ""
-                    },
-                },
-                "vars": {
-                    "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
-                    "ansible_shell_type": "cmd",
-                    "ansible_connection": "ssh"
+                    "ansible_host": None,
+                    "mac": None,
+                    "ansible_user": "",
+                    "ansible_password": ""
                 }
             },
+            "vars": {
+                "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
+                "ansible_shell_type": "cmd",
+                "ansible_connection": "ssh"
+            }
         }})
         win = get_windows()
         print("WSL2: " + win["ip"] + " -- " + win["mac"]) 
