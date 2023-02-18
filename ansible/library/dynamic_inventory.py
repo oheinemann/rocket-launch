@@ -81,11 +81,11 @@ def make_inventory():
     local = { OS: {
         "hosts": {
             HOSTNAME: {
-                "vars": {
-                    "ansible_connection": "local",
-                    "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
-                    "mac": mac
-                }
+                "mac": mac
+            },
+            "vars": {
+                "ansible_connection": "local",
+                "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
             }
         },
     }}
@@ -96,15 +96,17 @@ def make_inventory():
         inventory.update({"windows": {
             "hosts": {
                 "windows_host": {
-                    "vars": {
+                    {
                         "ansible_host": None,
-                        "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
+                        "mac": None,
                         "ansible_user": "",
-                        "ansible_password": "",
-                        "ansible_shell_type": "cmd",
-                        "ansible_connection": "ssh",
-                        "mac": None
-                    }
+                        "ansible_password": ""
+                    },
+                },
+                "vars": {
+                    "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
+                    "ansible_shell_type": "cmd",
+                    "ansible_connection": "ssh"
                 }
             },
         }})
@@ -115,7 +117,7 @@ def make_inventory():
         inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_password"] = PASSWORD
         inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_user"] = USER
         inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_host"] = win["ip"]
-        inventory["windows"]["hosts"]["windows_host"]["vars"]["mac"] = win["mac"]
+        inventory["windows"]["hosts"]["windows_host"]["mac"] = win["mac"]
         inventory["all"]["children"]["windows"] = None
 
     with open(os.path.expanduser('~') + "/.rocket-launch/ansible/inventory.json", "w") as f:
