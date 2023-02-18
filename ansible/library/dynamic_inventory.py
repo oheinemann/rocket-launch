@@ -82,12 +82,12 @@ def make_inventory():
         "hosts": {
             HOSTNAME: {
                 "mac": mac
-            },
-            "vars": {
-                "ansible_connection": "local",
-                "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
             }
         },
+        "vars": {
+            "ansible_connection": "local",
+            "ansible_ssh_common_args": "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        }
     }}
  
     inventory.update(local)

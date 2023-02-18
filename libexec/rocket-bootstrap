@@ -303,7 +303,7 @@ install_python() {
     fi
 
     if [[ "$WSL" == true ]]; then
-      sudo apt-get install -y -q net-tools
+      sudo apt-get install -y -q net-tools sshpass
     fi
   fi
   if !(pip3 freeze | grep psutil &> /dev/null); then
