@@ -7,10 +7,13 @@ import json
 import re
 import uuid
 from subprocess import check_output
+import getpass
 
 
 OS = ""
 WSL = False
+USER = ""
+PASSWORD = ""
 
 
 def main():
@@ -61,6 +64,7 @@ def check_os():
 
 
 def make_inventory():
+    global PASSWORD, USER
     inventoryString = """{
         "all": {
             "children": {}
@@ -72,7 +76,7 @@ def make_inventory():
 
     print(mac)
 
-    inventory["all"]["children"][OS] = {}
+    inventory["all"]["children"][OS] = null
 
     local = { OS: {
         "hosts": {
@@ -102,7 +106,9 @@ def make_inventory():
             }
         }})
         win = get_windows()
-        print("WSL2: " + win["ip"] + " -- " + win["mac"])
+        print("WSL2: " + win["ip"] + " -- " + win["mac"]) 
+        USER = input("Please add username of your WINDOWS HOST maschine: ")
+        PASSWORD = getpass.getpass(prompt="Please add the password of your WINDOWS HOST maschine: ")
         inventory["windows"]["hosts"]["windows_host"] = {"ansible_host": win["ip"], "mac": win["mac"]}
         inventory["all"]["children"]["windows"] = null
 
