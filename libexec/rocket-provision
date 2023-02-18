@@ -11,6 +11,8 @@
 set -e
 [ -n "$ROCKET_DEBUG" ] && set -x || Q="-q"
 
+echo "Root-Dir: $ROCKET_ROOT"
+
 # Keep sudo timestamp updated while ROCKET is running.
 if [ "$1" = "--sudo-wait" ]; then
   while true; do
