@@ -176,7 +176,7 @@ clone_repository() {
   else
     logn "Updating git repository in $install_location:"
     cd "$install_location"
-    git pull origin master &> /dev/null
+    git pull origin main &> /dev/null
     cd "$cwd"
   fi
   logk
@@ -233,10 +233,6 @@ check_git
 if [[ "$OS" == "macOS" ]]; then
   # Install the Xcode Command Line Tools.
   install_xcode_commandline_tools
-fi
-
-if [ -d "$HOME/.rocket-launch" ]; then
-  rm -Rf "$HOME/.rocket-launch/"
 fi
 
 # Clone/Update the "ROCKET" repository into our home directory
