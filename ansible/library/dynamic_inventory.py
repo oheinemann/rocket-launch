@@ -96,10 +96,10 @@ def make_inventory():
         inventory.update({"windows": {
             "hosts": {
                 "windows_host": {
+                    "ansible_password": "",
                     "ansible_host": None,
-                    "mac": None,
                     "ansible_user": "",
-                    "ansible_password": ""
+                    "mac": None
                 }
             },
             "vars": {
@@ -112,9 +112,9 @@ def make_inventory():
         print("WSL2: " + win["ip"] + " -- " + win["mac"]) 
         USER = input("Please add username of your WINDOWS HOST maschine: ")
         PASSWORD = getpass.getpass(prompt="Please add the password of your WINDOWS HOST maschine: ")
-        inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_password"] = PASSWORD
-        inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_user"] = USER
-        inventory["windows"]["hosts"]["windows_host"]["vars"]["ansible_host"] = win["ip"]
+        inventory["windows"]["hosts"]["windows_host"]["ansible_password"] = PASSWORD
+        inventory["windows"]["hosts"]["windows_host"]["ansible_user"] = USER
+        inventory["windows"]["hosts"]["windows_host"]["ansible_host"] = win["ip"]
         inventory["windows"]["hosts"]["windows_host"]["mac"] = win["mac"]
         inventory["all"]["children"]["windows"] = None
 
