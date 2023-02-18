@@ -61,16 +61,18 @@ def check_os():
 
 
 def make_inventory():
-    inventory = json.loads("""{
+    inventoryString = """{
         "all": {
             "children": {}
-        },
-    }""")
+        }
+    }"""
+    inventory = json.loads(inventoryString)
 
     mac = get_mac_address()
+
     print(mac)
 
-    inventory["all"]["children"][OS] =  null
+    inventory["all"]["children"][OS] = {}
 
     local = { OS: {
         "hosts": {
@@ -104,7 +106,7 @@ def make_inventory():
         inventory["windows"]["hosts"]["windows_host"] = {"ansible_host": win["ip"], "mac": win["mac"]}
         inventory["all"]["children"]["windows"] = null
 
-    with open("inventory.json", "w") as f:
+    with open(os.path.expanduser('~') + "/.rocket-launch/ansible/inventory.json", "w") as f:
         json.dump(inventory, f)
 
 

@@ -185,8 +185,6 @@ run_install() {
     fi
 
     # Run the Ansible playbook
-    name=$(echo "$1" | awk '{print tolower($0)}')
-
     if [ ! "$tags" ]; then
       tag_str=""
     else
@@ -194,7 +192,7 @@ run_install() {
     fi
 
     log "Running Ansible playbook${ENDC} ${BLUE}$1 ($name.yml)"
-    ANSIBLE_CONFIG=$ROCKET_ROOT/ansible/ansible.cfg ansible-playbook -i localhost, -e ansible_python_interpreter=/usr/local/bin/python3 $ROCKET_ROOT/ansible/$name.yml $tag_str
+    ANSIBLE_CONFIG=$ROCKET_ROOT/ansible/ansible.cfg ansible-playbook -i $ROCKET_ROOT/ansible/library/dynamic_inventory.py $ROCKET_ROOT/ansible/main.yml $tag_str
   fi
 }
 
@@ -208,8 +206,6 @@ if [ -z "${ROCKET_HEADER}" ]; then
   echo
 fi
 
-
-command="$1"
 shift
 
 skip=no
@@ -221,49 +217,10 @@ do
   [[ "$arg" == *=* ]] && eval $arg
 done
 
-
-case "$command" in
-"full" )
-  selection="Full"
-  run_install "$selection"
-  ;;
-"system" )
-  selection="System"
-  run_install "$selection"
-  ;;
-"development" )
-  selection="Development"
-  run_install "$selection"
-  ;;
-"applications" )
-  selection="Applications"
-  run_install "$selection"
-  ;;
-"configuration" )
-  selection="Configuration"
-  run_install "$selection"
-  ;;
-* )
-  PS3=$'\nPlease select installation type 1..8: '
-  select selection in "Update Homebrew only" "Install software updates only" Full System Development Applications Configuration Quit
-  do
-    if [ "$selection" = "Quit" ]
-    then
-      break
-    else
-      echo 
-      run_install "$selection"
-      break
-    fi
-  done
-  ;;
-esac
-
+run_install
 
 ROCKET_SUCCESS="1"
 
 
-if [ ! "$selection" = "Quit" ]; then
-  echo
-  echo -e "${BOLD}We run successfully the ${ENDC}${BLUE}$selection ($name.yml)${ENDC}${BOLD} playbook!${ENDC}"
-fi
+echo
+echo -e "${BOLD}We run successfully the ${ENDC}${BLUE}installation (main.yml)${ENDC}${BOLD} playbook!${ENDC}"
