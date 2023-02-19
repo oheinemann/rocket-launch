@@ -1,0 +1,5 @@
+---
+
+- name: Import the geerlingguy.mac.homebrew role
+  import_role:
+    name: geerlingguy.mac.homebrew

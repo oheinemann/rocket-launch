@@ -1,0 +1,6 @@
+homebrew_installed_packages:
+  - drud/ddev/ddev
+  - mkcert
+
+homebrew_cask_apps:
+  - docker

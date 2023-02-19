@@ -1,6 +1,11 @@
 ---
 # tasks file for ddev
 
-- name: Include OS-specific settings
-  debug:
-    msg: "DDEV unter {{ ansible_os_family }} installieren."
+- debug:
+    msg: "DDEV unter {{ ansible_system }} - {{ ansible_os_family }} installieren."
+
+- name: Include OS specific variables.
+  include_vars: "{{ ansible_system }}.yml"
+
+- name: Install OS specific applications
+  include_tasks: "setup-{{ ansible_system }}.yml"

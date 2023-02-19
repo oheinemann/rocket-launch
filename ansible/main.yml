@@ -1,14 +1,15 @@
 ---
 
-#- name: Collect host facts
+- hosts: all
+
+  roles:
+    - role: ddev
+
+#  tasks:
+    #- name: Collect host facts
 #  hosts: all
 #  gather_facts: yes
 #  tasks:
 #    - name: Display host facts
 #      debug:
 #        var: ansible_facts
-
-- hosts: all
-
-  roles:
-    - role: ddev
