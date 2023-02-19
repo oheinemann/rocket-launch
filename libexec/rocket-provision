@@ -200,8 +200,8 @@ install_software_updates() {
 # Function to run an Ansible playbook or 
 run_install() {
   # Get the root user access
-  get_root
   check_os
+  get_root
 
   if [ "$1" = "Update Homebrew only" ]; then
     # Update Homebrew.
