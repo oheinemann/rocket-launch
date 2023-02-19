@@ -203,13 +203,15 @@ run_install() {
   check_os
   get_root
 
-  if [ "$OS" == "macOS" && "$skip" != "no" ]; then
-    # Update Homebrew.
-    update_homebrew
-    # Check and install any remaining software updates.
-    install_software_updates
-  else
-    log "${RED}Skipping Homebrew updates and software updates!${ENDC}\n"
+  if [ "$OS" == "macOS" ]; then
+    if ["$skip" != "no" ]; then
+      # Update Homebrew.
+      update_homebrew
+      # Check and install any remaining software updates.
+      install_software_updates
+    else
+      log "${RED}Skipping Homebrew updates and software updates!${ENDC}\n"
+    fi
   fi
 
   # Run the Ansible playbook
