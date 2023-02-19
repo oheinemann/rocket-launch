@@ -237,8 +237,6 @@ if [ -z "${ROCKET_HEADER}" ]; then
   echo
 fi
 
-shift
-
 skip=no
 [[ "$1" == "--skip" ]] && skip=yes && shift
 
