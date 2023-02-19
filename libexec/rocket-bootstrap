@@ -332,7 +332,25 @@ install_ansible() {
 install_ansible_galaxy() {
   logn "Checking for Ansible galaxy roles"
   result=$(
-    { stdout=$(ansible-galaxy install -r $ROCKET_ROOT/ansible/requirements.yml -p $ROCKET_ROOT/ansible --force); returncode=$?; } 2>&1
+    { stdout=$(ansible-galaxy role install -r $ROCKET_ROOT/ansible/requirements.yml -p $ROCKET_ROOT/ansible/roles --force); returncode=$?; } 2>&1
+    printf "++++"
+    printf "%s\n" "$stdout"
+    exit "$returncode"
+  )
+  returncode=$?
+
+  var_out=${result#*++++}
+  var_err=${result%++++*}
+
+  if [ -n "$var_err" ]; then
+    echo 
+    abort "$var_err"
+  else
+    echo -e "\n$var_out"
+  fi
+
+  result=$(
+    { stdout=$(ansible-galaxy collection install -r $ROCKET_ROOT/ansible/requirements.yml -p $ROCKET_ROOT/ansible/collecions --force); returncode=$?; } 2>&1
     printf "++++"
     printf "%s\n" "$stdout"
     exit "$returncode"
