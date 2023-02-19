@@ -81,6 +81,7 @@ def make_inventory():
     local = { OS: {
         "hosts": {
             HOSTNAME: {
+                "ansible_connection": "local",
                 "mac": mac
             }
         },
