@@ -10,5 +10,5 @@
 
 - hosts: all
 
-roles:
+  roles:
     - role: ddev
