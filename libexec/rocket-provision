@@ -203,40 +203,28 @@ run_install() {
   check_os
   get_root
 
-  if [ "$1" == "Update Homebrew only" ]; then
+  if [ "$OS" == "macOS" && "$skip" != "no" ]; then
     # Update Homebrew.
     update_homebrew
-  elif [ "$1" == "Install software updates only" ]; then
     # Check and install any remaining software updates.
     install_software_updates
   else
-
-    if [ "$OS" == "macOS" ]; then
-      if [ "$skip" == "no" ]; then
-        # Update Homebrew.
-        update_homebrew
-
-        # Check and install any remaining software updates.
-        install_software_updates
-      else
-        log "${RED}Skipping Homebrew updates and software updates!${ENDC}\n"
-      fi
-    fi
-
-    # Run the Ansible playbook
-    if [ ! "$tags" ]; then
-      tag_str=""
-    else
-      tag_str='-t $tags'
-    fi
-
-    if [ ! -f $ROCKET_ROOT/ansible/inventory.json ]; then
-      python3 $ROCKET_ROOT/ansible/library/dynamic_inventory.py
-    fi
-
-    log "Running Ansible playbook${ENDC} ${BLUE}$1 ($name.yml)"
-    ANSIBLE_CONFIG=$ROCKET_ROOT/ansible/ansible.cfg ansible-playbook -i $ROCKET_ROOT/ansible/inventory.json $ROCKET_ROOT/ansible/main.yml $tag_str
+    log "${RED}Skipping Homebrew updates and software updates!${ENDC}\n"
   fi
+
+  # Run the Ansible playbook
+  if [ ! "$tags" ]; then
+    tag_str=""
+  else
+    tag_str='-t $tags'
+  fi
+
+  if [ ! -f $ROCKET_ROOT/ansible/inventory.json ]; then
+    python3 $ROCKET_ROOT/ansible/library/dynamic_inventory.py
+  fi
+
+  log "Running Ansible playbook${ENDC} ${BLUE}$1 ($name.yml)"
+  ANSIBLE_CONFIG=$ROCKET_ROOT/ansible/ansible.cfg ansible-playbook -i $ROCKET_ROOT/ansible/inventory.json $ROCKET_ROOT/ansible/main.yml $tag_str
 }
 
 
