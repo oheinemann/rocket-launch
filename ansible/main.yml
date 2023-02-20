@@ -3,8 +3,8 @@
 - hosts: all
 
   roles:
-    - role: ddev
-    - role: geerlingguy.mac.homebrew
+    - ddev
+    - geerlingguy.mac.homebrew
 #  tasks:
     #- name: Collect host facts
 #  hosts: all
