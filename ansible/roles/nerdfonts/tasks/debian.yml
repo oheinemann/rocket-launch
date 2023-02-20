@@ -1,0 +1,68 @@
+---
+
+- name: '[debian] Include Debian-specific variables'
+  ansible.builtin.include_vars: defaults/debian.yml
+  tags: nerdfonts
+
+- name: '[debian] Create NerdFonts folder for system-wode installation'
+  ansible.builtin.file:
+    path: "{{ nerdfonts_install_dir }}/{{ item.fontname }}"
+    state: directory
+    mode: 0755
+  become: true
+  loop: "{{ nerdfonts_fonts }}"
+  when:
+    - nerdfonts_env is defined
+    - "'system' in nerdfonts_env"
+  tags: nerdfonts
+
+- name: '[debian] Create NerdFonts folder for each user'
+  ansible.builtin.file:
+    path: "{{ nerdfonts_install_dir }}/{{ item.1.fontname }}"
+    state: directory
+    mode: 0755
+  loop: "{{ nerdfonts_users|product(nerdfonts_fonts)|list }}"
+  become: true
+  become_user: "{{ item.0 }}"
+  when:
+    - nerdfonts_env is defined
+    - "'user' in nerdfonts_env"
+  tags: nerdfonts
+
+- name: '[debian] Download specified Nerd Fonts for system-wide installation'
+  ansible.builtin.unarchive:
+    src: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerdfonts_release }}/{{ item.fontname }}.zip"
+    dest: "{{ nerdfonts_install_dir }}/{{ item.fontname }}"
+    remote_src: true
+  loop: "{{ nerdfonts_fonts }}"
+  register: nerdfonts_download
+  until: nerdfonts_download is succeeded
+  become: true
+  when:
+    - nerdfonts_env is defined
+    - "'system' in nerdfonts_env"
+  tags: nerdfonts
+
+- name: '[debian] Download specified Nerd Fonts for user-specific installation'
+  ansible.builtin.unarchive:
+    src: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerdfonts_release }}/{{ item.1.fontname }}.zip"
+    dest: "{{ nerdfonts_install_dir }}/{{ item.1.fontname }}"
+    remote_src: true
+  become: true
+  become_user: "{{ item.0 }}"
+  register: nerdfonts_download
+  until: nerdfonts_download is succeeded
+  loop: "{{ nerdfonts_users|product(nerdfonts_fonts)|list }}"
+  when:
+    - nerdfonts_env is defined
+    - "'user' in nerdfonts_env"
+  tags: nerdfonts
+
+- name: '[debian] Install specified NerdFonts'
+  ansible.builtin.command: "fc-cache -f {{ nerdfonts_install_dir }}"
+  # commented because of the issue whith var registered withi loop,
+  # registering "changed: false" while the actual change happened (reported yellow)
+  # when: nerdfonts_copy.changed
+  changed_when: nerdfonts_download.changed
+  become: true
+  tags: nerdfonts

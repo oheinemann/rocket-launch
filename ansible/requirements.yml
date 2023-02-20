@@ -7,4 +7,3 @@ roles:
 collections:
   - name: chocolatey.chocolatey
   - name: geerlingguy.mac
-  - name: drew1kun.fancyfonts
