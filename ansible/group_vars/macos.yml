@@ -8,6 +8,5 @@ homebrew_cask_apps:
   - google-chrome
   - slack
   - readdle-spark
-  - visual-studio-code
   - iterm2
   - microsoft-teams

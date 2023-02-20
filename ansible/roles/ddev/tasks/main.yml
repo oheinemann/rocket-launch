@@ -4,8 +4,10 @@
 - debug:
     msg: "DDEV unter {{ ansible_system }} - {{ ansible_os_family }} installieren."
 
-- name: Include OS specific variables.
-  include_vars: "{{ ansible_system }}.yml"
+- name: Assert supported distribution
+  ansible.builtin.assert:
+    that:
+      - "ansible_pkg_mgr in ('apt', 'yum', 'dnf', 'zypper', 'homebrew')"
 
-- name: Install OS specific applications
-  include_tasks: "setup-{{ ansible_system }}.yml"
+- name: 'Install ({{ ansible_pkg_mgr }})'
+  include_tasks: 'install-{{ ansible_pkg_mgr }}.yml'

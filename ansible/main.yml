@@ -3,8 +3,11 @@
 - hosts: all
 
   roles:
-    - ddev
-    - geerlingguy.mac.homebrew
+    - role: ddev
+    - role: geerlingguy.mac.homebrew
+    - role: drew1kun.fancyfonts.nerdfonts
+    - role: gantsign.visual-studio-code
+
 #  tasks:
     #- name: Collect host facts
 #  hosts: all

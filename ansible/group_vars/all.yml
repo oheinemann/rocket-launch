@@ -1,0 +1,70 @@
+
+users:
+  - username: {{ ansible_user_id }}
+    visual_studio_code_extensions:
+      - formulahendry.auto-close-tag
+      - formulahendry.auto-rename-tag
+      - ms-ceintl.vscode-language-pack-de
+      - sdras.night-owl
+      - simonsiefke.ddev
+      - ms-azuretools.vscode-docker
+      - pkief.material-icon-theme
+    visual_studio_code_settings_overwrite: yes
+    visual_studio_code_settings: {
+      "git.autofetch": true,
+      "terminal.integrated.fontFamily": "SauceCodePro Nerd Font",
+      "editor.fontFamily": "Fira Code",
+      "editor.cursorBlinking": "expand",
+      "editor.cursorWidth": 3,
+      "editor.formatOnPaste": true,
+      "editor.formatOnType": true,
+      "editor.minimap.enabled": false,
+      "editor.suggestSelection": "first",
+      "editor.fontLigatures": true,
+      "workbench.iconTheme": "material-icon-theme",
+      "workbench.colorTheme": "Night Owl",
+      "workbench.sideBar.location": "right",
+      "breadcrumbs.enabled": false,
+      "workbench.colorCustomizations": {
+      
+          "terminal.selectionBackground": "#073642",
+          "terminal.background": "#011627",
+          "terminal.foreground": "#EEE8D5",
+          "terminalCursor.background": "#839496",
+          "terminalCursor.foreground": "#073642",
+          "terminal.ansiBlack": "#073642",
+          "terminal.ansiBlue": "#268BD2",
+          "terminal.ansiBrightBlack": "#002B36",
+          "terminal.ansiBrightBlue": "#839496",
+          "terminal.ansiBrightCyan": "#93A1A1",
+          "terminal.ansiBrightGreen": "#586E75",
+          "terminal.ansiBrightMagenta": "#6C71C4",
+          "terminal.ansiBrightRed": "#CB4B16",
+          "terminal.ansiBrightWhite": "#FDF6E3",
+          "terminal.ansiBrightYellow": "#657B83",
+          "terminal.ansiCyan": "#2AA198",
+          "terminal.ansiGreen": "#859900",
+          "terminal.ansiMagenta": "#D33682",
+          "terminal.ansiRed": "#DC322F",
+          "terminal.ansiWhite": "#EEE8D5",
+          "terminal.ansiYellow": "#B58900"
+      },
+      "terminal.integrated.fontSize": 14,
+      "workbench.preferredHighContrastColorTheme": "Night Owl",
+      "git.autofetchPeriod": 10,
+      "editor.renderWhitespace": "all",
+      "editor.bracketPairColorization.enabled": true,
+      "editor.guides.bracketPairs": true,
+      "bracketPairColorizer.depreciation-notice": false,
+      "diffEditor.ignoreTrimWhitespace": false,
+      "editor.fontSize": 13,
+      "window.zoomLevel": 2,
+      "emmet.excludeLanguages": [
+      ],
+      "workbench.settings.enableNaturalLanguageSearch": false,
+      "workbench.editor.historyBasedLanguageDetection": false,
+      "workbench.editor.languageDetection": false,
+      "namespaceResolver.sortAlphabetically": true,
+      "namespaceResolver.sortOnSave": true,
+      "namespaceResolver.sortNatural": true
+    }

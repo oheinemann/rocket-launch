@@ -1,0 +1,16 @@
+---
+
+- name: Install ddev and other applications
+  community.general.homebrew_cask:
+    name: docker
+    state: present
+
+- name: Install drud/ddev/ddev
+  community.general.homebrew:
+    name: drud/ddev/ddev
+    state: present
+
+- name: Install mkcert
+  community.general.homebrew:
+    name: mkcert
+    state: present
