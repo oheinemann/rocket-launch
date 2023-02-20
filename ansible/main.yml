@@ -4,7 +4,7 @@
 
   roles:
     - role: ddev
-
+    - role: geerlingguy.mac.homebrew
 #  tasks:
     #- name: Collect host facts
 #  hosts: all

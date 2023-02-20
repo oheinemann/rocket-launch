@@ -1,5 +1,5 @@
 ---
 
 - name: Import the geerlingguy.mac.homebrew role
-  import_role:
+  ansible.builtin.include_role:
     name: geerlingguy.mac.homebrew

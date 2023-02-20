@@ -1,0 +1,13 @@
+homebrew_installed_packages:
+  - git
+  - ssh-copy-id
+
+homebrew_cask_appdir: /Applications
+homebrew_cask_apps:
+  - firefox
+  - google-chrome
+  - slack
+  - readdle-spark
+  - visual-studio-code
+  - iterm2
+  - microsoft-teams
