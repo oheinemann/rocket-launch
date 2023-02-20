@@ -350,7 +350,7 @@ install_ansible_galaxy() {
   fi
 
   result=$(
-    { stdout=$(ansible-galaxy collection install -r $ROCKET_ROOT/ansible/requirements.yml -p $ROCKET_ROOT/ansible/collecions --force); returncode=$?; } 2>&1
+    { stdout=$(ansible-galaxy collection install -r $ROCKET_ROOT/ansible/requirements.yml -p $ROCKET_ROOT/ansible/collections --force); returncode=$?; } 2>&1
     printf "++++"
     printf "%s\n" "$stdout"
     exit "$returncode"
