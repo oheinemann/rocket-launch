@@ -1,9 +1,7 @@
 ---
-
 roles:
   - name: elliotweiser.osx-command-line-tools
   - name: gantsign.visual-studio-code
-#  - name: geerlingguy.dotfiles
 
 collections:
   - name: chocolatey.chocolatey
