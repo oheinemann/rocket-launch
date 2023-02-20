@@ -5,6 +5,7 @@
   roles:
     - role: ddev
     - role: geerlingguy.mac.homebrew
+    - role: tedgonzalez.xcodeinstall
     - role: drew1kun.fancyfonts.nerdfonts
     - role: gantsign.visual-studio-code
 
