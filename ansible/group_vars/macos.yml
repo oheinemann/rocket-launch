@@ -10,8 +10,5 @@ homebrew_cask_apps:
   - readdle-spark
   - iterm2
   - microsoft-teams
-  - 1passwords
+  - 1password
   - 1password-cli
-
-xcode_xip_location: "/Users/{{ ansible_user_id }}/Downloads/Xcode_14.2.xip"
-xcode_major_version: 14
