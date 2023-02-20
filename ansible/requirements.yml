@@ -2,7 +2,7 @@
 roles:
   - name: elliotweiser.osx-command-line-tools
   - name: gantsign.visual-studio-code
-  - name: tedgonzalez.xcodeinstall
+  - name: macstadium.xcode
 
 collections:
   - name: chocolatey.chocolatey
