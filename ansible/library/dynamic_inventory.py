@@ -52,14 +52,14 @@ def check_os():
     global OS, WSL
     os_name = platform.system()
     if os_name == "Windows":
-        OS = "Windows"
+        OS = "windows"
     elif os_name == "Linux":
-        OS = "Linux"
+        OS = "linux"
         uname_r = os.popen("uname -r").read()
         if "microsoft" in uname_r.lower():
             WSL = True
     elif os_name == "Darwin":
-        OS = "macOS"
+        OS = "macos"
         os_version = platform.mac_ver()[0]
 
 
