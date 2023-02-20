@@ -1,6 +1,6 @@
 
 users:
-  - username: {{ ansible_user_id }}
+  - username: "{{ ansible_user_id }}"
     visual_studio_code_extensions:
       - formulahendry.auto-close-tag
       - formulahendry.auto-rename-tag
