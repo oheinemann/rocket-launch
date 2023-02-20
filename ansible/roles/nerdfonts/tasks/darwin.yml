@@ -1,4 +1,7 @@
 ---
+- name: Tap a Homebrew cask-fonts, state present
+  community.general.homebrew_tap:
+    name: homebrew/cask-fonts
 
 - name: '[darwin] Install Nerd Fonts with homebrew cask'
   community.general.homebrew_cask:
