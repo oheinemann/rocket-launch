@@ -43,6 +43,17 @@
   with_items: '{{ users }}'
   when: users is defined
 
+
+- name: clone zsh-dircolors-solarized for users
+  become_user: '{{ item.username }}'
+  git:
+    repo: 'https://github.com/joel-porquet/zsh-dircolors-solarized'
+    version: master
+    dest: '~/.oh-my-zsh/custom/plugins/zsh-dircolors-solarized'
+  with_items: '{{ users }}'
+  when: users is defined
+
+
 - name: write .zshrc for users
   become_user: '{{ item.username }}'
   template:
