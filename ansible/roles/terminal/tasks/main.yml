@@ -6,6 +6,6 @@
 - name: "[main] Include tomereli.oh-my-zsh-p10k role"
   ansible.builtin.include_role: 
     name: tomereli.oh-my-zsh-p10k
-    vars:
-      users:
-        - username: "{{ ansible_user_id }}"
+  vars:
+    users:
+      - username: "{{ ansible_user_id }}"
