@@ -1,0 +1,71 @@
+---
+
+- name: install dependencies
+  package:
+    name:
+      - git
+      - zsh
+    state: present
+
+- name: clone oh-my-zsh for users
+  become_user: '{{ item.username }}'
+  git:
+    repo: 'https://github.com/robbyrussell/oh-my-zsh.git'
+    version: master
+    dest: '~/.oh-my-zsh'
+  with_items: '{{ users }}'
+  when: users is defined
+
+- name: clone powerlevel10k for users
+  become_user: '{{ item.username }}'
+  git:
+    repo: 'https://github.com/romkatv/powerlevel10k.git'
+    version: master
+    dest: '~/.oh-my-zsh/custom/themes/powerlevel10k'
+  with_items: '{{ users }}'
+  when: users is defined
+
+- name: clone zsh-autosuggestions for users
+  become_user: '{{ item.username }}'
+  git:
+    repo: 'https://github.com/zsh-users/zsh-autosuggestions.git'
+    version: master
+    dest: '~/.oh-my-zsh/custom/plugins/zsh-autosuggestions'
+  with_items: '{{ users }}'
+  when: users is defined
+
+- name: clone zsh-syntax-highlighting for users
+  become_user: '{{ item.username }}'
+  git:
+    repo: 'https://github.com/zsh-users/zsh-syntax-highlighting.git'
+    version: master
+    dest: '~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting'
+  with_items: '{{ users }}'
+  when: users is defined
+
+- name: write .zshrc for users
+  become_user: '{{ item.username }}'
+  template:
+    src: "{{ zshrc_src_template }}"
+    dest: '~/.zshrc'
+    backup: yes
+    mode: 'u=rw,go=r'
+  with_items: '{{ users }}'
+  when: users is defined
+
+- name: write .p10k.zsh for users
+  become_user: '{{ item.username }}'
+  copy:
+    src: "{{ p10k_src_file }}"
+    dest: ~/.p10k.zsh
+    backup: yes
+    mode: 'u=rw,go=r'
+  with_items: '{{ users }}'
+  when: users is defined 
+
+- name: set default shell for users
+  user:
+    name: '{{ item.username }}'
+    shell: /bin/zsh
+  with_items: '{{ users }}'
+  when: users is defined 
