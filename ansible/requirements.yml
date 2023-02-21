@@ -4,7 +4,7 @@ roles:
   - name: gantsign.visual-studio-code
   - name: macstadium.xcode
   - name: tomereli.oh-my-zsh-p10k
-  - name: lwalley.iterm2
+#  - name: lwalley.iterm2
 
 collections:
   - name: chocolatey.chocolatey

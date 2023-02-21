@@ -48,5 +48,5 @@ galaxy_info:
     #       Maximum 20 tags per role.
 
 dependencies:
-  - role: lwalley.iterm2
+ # - role: lwalley.iterm2
   - role: tomereli.oh-my-zsh-p10k

@@ -14,5 +14,5 @@
     - result.failed
     - "not 'Error: It seems there is already ' in result.msg"
 
-- name: '[darwin] Install Darwin-specific applications with homebrew cask'
-  ansible.builtin.include_role: lwalley.iterm2
+#- name: '[darwin] Install Darwin-specific applications with homebrew cask'
+#  ansible.builtin.include_role: lwalley.iterm2
