@@ -4,7 +4,8 @@
   ansible.builtin.include_tasks: "{{ ansible_os_family|lower }}.yml"
 
 - name: "[main] Include tomereli.oh-my-zsh-p10k role"
-  ansible.builtin.include_role: tomereli.oh-my-zsh-p10k
-  vars:
-    users:
-      - username: "{{ ansible_user_id }}"
+  ansible.builtin.include_role: 
+    name: tomereli.oh-my-zsh-p10k
+    vars:
+      users:
+        - username: "{{ ansible_user_id }}"
