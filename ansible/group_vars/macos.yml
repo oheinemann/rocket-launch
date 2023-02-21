@@ -8,7 +8,6 @@ homebrew_cask_apps:
   - google-chrome
   - slack
   - readdle-spark
-  - iterm2
   - microsoft-teams
   - 1password
   - 1password-cli

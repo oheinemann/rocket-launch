@@ -26,7 +26,6 @@ users:
       "workbench.sideBar.location": "right",
       "breadcrumbs.enabled": false,
       "workbench.colorCustomizations": {
-      
           "terminal.selectionBackground": "#073642",
           "terminal.background": "#011627",
           "terminal.foreground": "#EEE8D5",
@@ -59,8 +58,7 @@ users:
       "diffEditor.ignoreTrimWhitespace": false,
       "editor.fontSize": 13,
       "window.zoomLevel": 2,
-      "emmet.excludeLanguages": [
-      ],
+      "emmet.excludeLanguages": [],
       "workbench.settings.enableNaturalLanguageSearch": false,
       "workbench.editor.historyBasedLanguageDetection": false,
       "workbench.editor.languageDetection": false,
@@ -68,3 +66,22 @@ users:
       "namespaceResolver.sortOnSave": true,
       "namespaceResolver.sortNatural": true
     }
+
+# default theme
+oh_my_zsh_theme: powerlevel10k
+
+# default plugins
+oh_my_zsh_plugins:
+  - git
+  - zsh-autosuggestions
+  - zsh-syntax-highlighting
+  - zsh-dircolors-solarized
+
+# default .zshrc template
+zshrc_src_template: .zshrc.j2 # Points to the default template delivered with this role
+
+# default .p10k.zsh file
+p10k_src_file: .p10k.zsh # Points to the default file delivered with this role
+
+git_name: Oliver Heinemann
+git_email: kontak@oliver-heinemann.net

@@ -6,10 +6,22 @@
     - role: ddev
     - role: geerlingguy.mac.homebrew
     - role: nerdfonts
+    - role: terminal
     - role: gantsign.visual-studio-code
 
-#  tasks:
-    #- name: Collect host facts
+  tasks:
+    - name: Set global GIT parameters
+      community.general.git_config:
+        name: "{{ item[0] }}"
+        scope: global
+        value: "{{ item[1] }}"
+      with_list:
+        - ["user.name", "{{ git_name }}"]
+        - ["user.email", "{{ git_email }}"]
+        - ["core.autocrlf", "false"]
+        - ["core.filemode", "false"]
+
+#- name: Collect host facts
 #  hosts: all
 #  gather_facts: yes
 #  tasks:
