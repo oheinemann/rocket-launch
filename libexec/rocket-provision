@@ -123,7 +123,7 @@ check_os() {
     OS="macOS"
     logn "Checking macOS version:"
     version="$(sw_vers -productVersion)"
-    if [ "$(echo $version '>' 10.9 | bc)" -eq 1 ]; then
+    if [ "$(sw_vers -productVersion | awk -F. '{print $1"."$2}')" \> "10.9" ]; then
       log "macOS $version"
     else
       abort "Please run ROCKET on macOS version greater 10.9!"
