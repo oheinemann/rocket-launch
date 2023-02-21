@@ -5,7 +5,7 @@
 
 - name: '[darwin] Install Darwin-specific applications with homebrew cask'
   community.general.homebrew_cask:
-    name: "{{ item.name }}"
+    name: "{{ item }}"
     state: present
   with_nested:
     - "{{ terminal_apps }}"
