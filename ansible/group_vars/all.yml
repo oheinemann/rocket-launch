@@ -4,11 +4,38 @@ users:
     visual_studio_code_extensions:
       - formulahendry.auto-close-tag
       - formulahendry.auto-rename-tag
+      - formulahendry.auto-complete-tag
+      - kevinkyang.auto-comment-blocks
       - ms-ceintl.vscode-language-pack-de
       - sdras.night-owl
       - simonsiefke.ddev
       - ms-azuretools.vscode-docker
       - pkief.material-icon-theme
+      - EditorConfig.EditorConfig
+      - donjayamanne.git-extension-pack
+      - mhutchie.git-graph
+      - codezombiech.gitignore
+      - ecmel.vscode-html-css
+      - Zignd.html-css-class-completion
+      - christian-kohler.path-intellisense
+      - xdebug.php-debug
+      - neilbrayfield.php-docblocker
+      - xdebug.php-pack
+      - phproberto.vscode-php-getters-setters
+      - bmewburn.vscode-intelephense-client
+      - zobo.php-intellisense
+      - MehediDracula.php-namespace-resolver
+      - esbenp.prettier-vscode
+      - DotJoshJohnson.xml
+      - mikestead.dotenv
+      - GraphQL.vscode-graphql-syntax
+      - xabikos.JavaScriptSnippets
+      - IBM.output-colorizer
+      - benjaminkott.typo3-typoscript
+      - mrmlnc.vscode-scss
+      - streetsidesoftware.code-spell-checker
+      - wayou.vscode-todo-highlight
+      - networkteam.neos-fusion
     visual_studio_code_settings_overwrite: yes
     visual_studio_code_settings: {
       "git.autofetch": true,
