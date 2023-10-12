@@ -1,6 +1,6 @@
 ---
 roles:
-  - name: elliotweiser.osx-command-line-tools
+#  - name: elliotweiser.osx-command-line-tools
   - name: gantsign.visual-studio-code
 #  - name: lwalley.iterm2
 
