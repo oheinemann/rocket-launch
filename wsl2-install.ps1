@@ -165,6 +165,13 @@ function Select-Distro () {
     # You can also use https://store.rg-adguard.net to get Appx links from Windows Store links
     $distrolist = (
         [PSCustomObject]@{
+            'Name' = 'Ubuntu'
+            'URI' = 'https://aka.ms/wslubuntu'
+            'AppxName' = 'CanonicalGroupLimited.UbuntuonWindows'
+            'winpe' = 'ubuntu.exe'
+            'installed' = $false
+        },
+        [PSCustomObject]@{
             'Name' = 'Ubuntu 22.04 LTS'
             'URI' = 'https://aka.ms/wslubuntu2204'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu22.04onWindows'
