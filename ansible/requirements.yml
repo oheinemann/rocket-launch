@@ -6,4 +6,4 @@ roles:
 
 collections:
   - name: chocolatey.chocolatey
-  - name: geerlingguy.mac
+#  - name: geerlingguy.mac
