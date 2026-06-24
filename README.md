@@ -1,47 +1,96 @@
-# ROCKET LAUNCH
-A toolset to bootstrap a full customizable development system. This does not assume you're doing web development but installs the minimal set of software every developer will want.
+# 🚀 rocket-launch
 
-## Introduction
-This project was developed to bring a Mac or PC to a defined state and ready for immediate use with little effort.
+Bring a fresh machine to a defined, ready-to-work state in minutes — on
+**macOS**, **Windows 10/11 + WSL2**, and **Fedora**.
 
-Currently, it can be used to install software on a Mac with version 10.9 or higher, an Ubuntu or Debian distribution either directly or as a WSL2 variant under Windows.
-As a Windows subsystem Linux, the project also provides everything necessary on the Windows host system.
+rocket-launch is the **engine** (this repo, public). Your personal apps and
+settings live in a separate **private config repo** that you point the installer
+at — or it falls back to a public example config.
 
-## Features
-- Enables the macOS application firewall (for better security)
-- Enables full-disk encryption and saves the FileVault Recovery Key to the Desktop (for better security)
-- Installs the Xcode Command Line Tools (for compilers and Unix tools)
-- Agree to the Xcode license (for using compilers without prompts)
-- Installs the latest macOS software updates (for better security)
-- Installs [Homebrew](http://brew.sh) (for installing command-line software)
-- Installs [Homebrew Services](https://github.com/Homebrew/homebrew-services) (for managing Homebrew-installed services)
-- Installs [Homebrew Cask](https://github.com/caskroom/homebrew-cask) (for installing graphical software)
-- Idempotent
+> v2 rewrite. The original Windows/WSL-only version is preserved in the
+> `v1-legacy` branch.
 
+## How it works
 
-# WSL2setup
+Two phases, like before — but OS-agnostic and data-driven:
 
-This script allows you to quickly get up and running with WSL2 on Windows 10 Build 2004.
-This script allows allows for easy install of various Linux distros.
+1. **Bootstrap (Phase 0)** — a tiny per-OS script installs git, Ansible and
+   chezmoi.
+2. **Provision (Phase 1)** — Ansible installs your apps and chezmoi applies your
+   dotfiles, both driven entirely by your config repo.
 
-## Quickstart on Winndows
-
-To quickly get up and running with WSL2, open a new PowerShell window as "Admin" and run the following one-liner:
-
-```posh
-iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/oheinemann/rocket-launch/main/wsl2-install.ps1'))
+```
+engine (public)                  config (private)
+├── install.sh / install.ps1     ├── machines.yml      hostname → profiles
+├── bin/rocket.sh                ├── profiles/*.yml    bundles of logical apps
+├── bootstrap/<os>.sh|ps1        ├── windows-host.txt  winget ids (host GUI apps)
+├── ansible/ (roles, site.yml)   └── dotfiles/         chezmoi source (+ op:// refs)
+└── lib/package-map.yml          (logical app → per-OS manager/id)
 ```
 
-You will have to run this one-liner twice.
-* Once to install Windows pre-requisites
-* Once after the computer re-boots to update the WSL2 kernel and install a WSL distro (Ubuntu 18.04 recommended)
+## Quickstart
 
+### macOS / Fedora / Linux & WSL
+```bash
+curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/install.sh \
+  | bash -s -- --config git@github.com:you/rocket-launch-config.git
+```
+Omit `--config` to use the public example config.
 
-## Quickstart on Linux/Mac
+### Windows 10 / 11 (one command, one reboot)
+Run in an **elevated** PowerShell:
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/oheinemann/rocket-launch/main/install.ps1) } -Config https://github.com/you/rocket-launch-config.git"
+```
+If WSL2 isn't set up yet, it installs it, **auto-resumes after the reboot**
+(no second manual run), provisions Windows host apps via **winget**, then runs
+the Linux installer inside WSL.
 
-Run the following command in your Terminal to install and bootstrap ROCKET LAUNCH:
+## Per-machine setup
+
+Machines are matched by **hostname** to reusable **profiles** in `machines.yml`:
+
+```yaml
+machines:
+  olli-thinkpad: { os: windows, profiles: [base, dev, workstation] }
+  olli-macbook:  { os: macos,   profiles: [base, dev, laptop] }
+  olli-mobile:   { os: macos,   profiles: [base, laptop] }   # lean
+defaults:
+  profiles: [base]
+```
+
+Mobile/portable machines get lean profiles; fixed workstations get the full set.
+
+## Package abstraction
+
+Profiles list **logical** app names; the engine resolves them per OS via
+`lib/package-map.yml`:
+
+```yaml
+slack:
+  macos: { mgr: brew-cask, id: slack }
+  dnf:   { mgr: flatpak,   id: com.slack.Slack }
+  # WSL: Slack runs on the Windows host (windows-host.txt)
+```
+
+## CLI
 
 ```bash
-curl -s https://raw.githubusercontent.com/oheinemann/rocket-launch/main/install.sh | bash
-
+rocket doctor      # show detected env + tool availability
+rocket bootstrap   # (re)run Phase 0 for this OS
+rocket provision --config <git-url>   # (re)run Phase 1
 ```
+
+## Supported targets
+
+macOS · Windows 10/WSL2 · Windows 11/WSL2 · Fedora 44
+
+## Secrets
+
+No secrets in any repo. chezmoi resolves `op://` references through the
+1Password CLI at apply time (SSH keys, WireGuard config, …).
+
+## Status
+
+v2 is an early **alpha** scaffold (Phase A). See the design notes for the
+roadmap (package roles, shell/chezmoi/1Password/WireGuard, CI across all OSes).

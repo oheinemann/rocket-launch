@@ -1,0 +1,6 @@
+---
+# rocket-launch always provisions the local machine.
+all:
+  hosts:
+    localhost:
+      ansible_connection: local

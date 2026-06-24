@@ -1,0 +1,7 @@
+---
+# Shell / runtime setup (Phase A stub).
+# Phase C will port the v1 zsh/oh-my-zsh/p10k setup here, data-driven per profile.
+
+- name: Shell role placeholder
+  ansible.builtin.debug:
+    msg: "shell role: nothing to do yet (planned: zsh, oh-my-zsh, prompt, nerdfonts)."

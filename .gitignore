@@ -1,11 +1,15 @@
-### Ansible template
+# Ansible
 *.retry
+ansible/collections/
 
-### macOS template
-# General
+# macOS
 .DS_Store
 .AppleDouble
 .LSOverride
-
-# Thumbnails
 ._*
+
+# Local / scratch
+*.log
+.rocket-launch/
+.rocket-launch-config/
+bin/rocket.probe

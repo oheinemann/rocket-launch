@@ -1,0 +1,7 @@
+---
+# base — installed everywhere. Logical names resolve via engine package-map.yml.
+packages:
+  - git
+  - ripgrep
+  - fzf
+  - neovim

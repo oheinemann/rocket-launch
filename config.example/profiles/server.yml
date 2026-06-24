@@ -1,0 +1,4 @@
+---
+# server — headless box. No GUI apps.
+packages:
+  - docker

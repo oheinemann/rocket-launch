@@ -1,7 +1,0 @@
----
-
-- name: "[main] Include {{ ansible_os_family }}-specific tasks"
-  ansible.builtin.include_tasks: "{{ ansible_os_family|lower }}.yml"
-
-- name: "[main] Install oh-my-zsh and powerLevel10k"
-  ansible.builtin.include_tasks: "oh-my-zsh.yml"

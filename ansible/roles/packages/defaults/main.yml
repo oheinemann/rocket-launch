@@ -1,0 +1,5 @@
+---
+# Logical packages selected by site.yml from the active profiles.
+selected_packages: []
+# Logical -> per-OS manager/id mapping, loaded from the engine in site.yml.
+package_map: {}

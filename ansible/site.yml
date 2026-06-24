@@ -1,0 +1,62 @@
+---
+# rocket-launch — master playbook (Phase 1 provisioning).
+#
+# Data flow:
+#   engine   : lib/package-map.yml  (logical app -> per-OS manager/id)
+#   config   : machines.yml, profiles/*.yml, apps.yml  (what to install where)
+#
+# Invoked by `rocket provision` with:
+#   rl_config_home, rl_context, rl_hostname
+
+- name: rocket-launch provisioning
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    rl_engine_home: "{{ playbook_dir | dirname }}"
+    rl_os: >-
+      {{ 'macos' if ansible_system == 'Darwin'
+         else ('linux' if ansible_system == 'Linux' else 'unknown') }}
+
+  pre_tasks:
+    - name: Load package map (engine)
+      ansible.builtin.include_vars:
+        file: "{{ rl_engine_home }}/lib/package-map.yml"
+        name: package_map
+
+    - name: Load machine definitions (config)
+      ansible.builtin.include_vars:
+        file: "{{ rl_config_home }}/machines.yml"
+
+    - name: Resolve profiles for this host
+      ansible.builtin.set_fact:
+        host_profiles: >-
+          {{ machines[rl_hostname].profiles
+             | default(defaults.profiles | default(['base'])) }}
+
+    - name: Accumulate logical packages from all selected profiles
+      ansible.builtin.set_fact:
+        selected_packages: >-
+          {{ (selected_packages | default([])) +
+             ((lookup('file', rl_config_home ~ '/profiles/' ~ item ~ '.yml')
+               | from_yaml).packages | default([])) }}
+      loop: "{{ host_profiles }}"
+
+    - name: Deduplicate package list
+      ansible.builtin.set_fact:
+        selected_packages: "{{ selected_packages | default([]) | unique }}"
+
+    - name: Show resolution summary
+      ansible.builtin.debug:
+        msg:
+          - "host       : {{ rl_hostname }}"
+          - "context    : {{ rl_context }}  (os={{ rl_os }})"
+          - "profiles   : {{ host_profiles }}"
+          - "packages   : {{ selected_packages }}"
+
+  roles:
+    - role: packages       # install resolved apps via the right OS manager
+    - role: shell          # shell/runtime setup (stub)
+    - role: chezmoi        # dotfiles + secrets via chezmoi
+    # - role: onepassword  # Phase C: 1Password CLI + SSH agent
+    # - role: wireguard    # Phase C: VPN config from op:// references

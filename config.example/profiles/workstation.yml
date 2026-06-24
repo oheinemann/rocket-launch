@@ -1,0 +1,4 @@
+---
+# workstation — fixed desktop, full app set.
+packages:
+  - slack

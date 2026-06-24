@@ -1,0 +1,3 @@
+# chezmoi source directory.
+# Put your dotfiles here (chezmoi naming, e.g. dot_gitconfig, dot_zshrc.tmpl).
+# Secrets via op:// references are resolved by chezmoi at apply time.

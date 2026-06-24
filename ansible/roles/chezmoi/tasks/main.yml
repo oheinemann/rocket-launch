@@ -1,0 +1,23 @@
+---
+# Apply dotfiles with chezmoi, using the config repo's dotfiles/ as source.
+# Secrets are resolved by chezmoi at apply time via op:// references.
+
+- name: Check chezmoi availability
+  ansible.builtin.command: chezmoi --version
+  register: chezmoi_check
+  changed_when: false
+  failed_when: false
+
+- name: Skip if chezmoi missing
+  ansible.builtin.debug:
+    msg: "chezmoi not found — skipping dotfiles. Re-run 'rocket bootstrap'."
+  when: chezmoi_check.rc != 0
+
+- name: Apply dotfiles with chezmoi
+  ansible.builtin.command:
+    cmd: "chezmoi apply --source {{ rl_config_home }}/dotfiles --no-tty"
+  register: chezmoi_apply
+  changed_when: "'modified' in (chezmoi_apply.stdout | default(''))"
+  when:
+    - chezmoi_check.rc == 0
+    - (rl_config_home ~ '/dotfiles') is exists

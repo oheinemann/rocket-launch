@@ -1,0 +1,7 @@
+# Windows host apps (winget ids), one per line. '#' = comment.
+# Prefix with "choco:" to use the Chocolatey fallback, e.g. choco:some-package
+Microsoft.WindowsTerminal
+AgileBits.1Password
+SlackTechnologies.Slack
+Mozilla.Firefox
+Microsoft.VisualStudioCode

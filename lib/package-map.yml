@@ -1,0 +1,44 @@
+---
+# Package map — resolves a *logical* app name to the right manager + id per OS.
+#
+# managers:
+#   macos   : brew | brew-cask | mas
+#   linux   : apt (Ubuntu/WSL) | dnf (Fedora) | flatpak
+#
+# Profiles in the config repo reference only the logical keys below.
+# Extend freely; unknown keys are reported and skipped during provisioning.
+
+git:
+  macos: { mgr: brew, id: git }
+  apt:   { mgr: apt,  id: git }
+  dnf:   { mgr: dnf,  id: git }
+
+ripgrep:
+  macos: { mgr: brew, id: ripgrep }
+  apt:   { mgr: apt,  id: ripgrep }
+  dnf:   { mgr: dnf,  id: ripgrep }
+
+fzf:
+  macos: { mgr: brew, id: fzf }
+  apt:   { mgr: apt,  id: fzf }
+  dnf:   { mgr: dnf,  id: fzf }
+
+neovim:
+  macos: { mgr: brew, id: neovim }
+  apt:   { mgr: apt,  id: neovim }
+  dnf:   { mgr: dnf,  id: neovim }
+
+docker:
+  macos: { mgr: brew-cask, id: docker }
+  apt:   { mgr: apt,       id: docker.io }
+  dnf:   { mgr: dnf,       id: docker }
+
+vscode:
+  macos: { mgr: brew-cask, id: visual-studio-code }
+  apt:   { mgr: apt,       id: code }
+  dnf:   { mgr: dnf,       id: code }
+
+slack:
+  macos: { mgr: brew-cask, id: slack }
+  dnf:   { mgr: flatpak,   id: com.slack.Slack }
+  # On WSL, Slack lives on the Windows host (see config windows-host.txt).

@@ -1,0 +1,65 @@
+---
+# Resolve logical packages via the package map and install them with the
+# manager that matches the current OS/context.
+
+- name: Determine package-map OS key
+  ansible.builtin.set_fact:
+    pkg_os_key: "{{ 'macos' if rl_os == 'macos' else ('dnf' if rl_context == 'fedora' else 'apt') }}"
+
+- name: Resolve logical packages to {mgr, id}
+  ansible.builtin.set_fact:
+    resolved_packages: "{{ (resolved_packages | default([])) + [ package_map[item][pkg_os_key] ] }}"
+  loop: "{{ selected_packages }}"
+  when:
+    - item in package_map
+    - pkg_os_key in (package_map[item] | default({}))
+
+- name: Report unresolved logical packages
+  ansible.builtin.debug:
+    msg: "Skipping '{{ item }}' — no '{{ pkg_os_key }}' mapping in package-map.yml."
+  loop: "{{ selected_packages }}"
+  when: item not in package_map or pkg_os_key not in (package_map[item] | default({}))
+
+- name: Install Homebrew formulae (macOS)
+  community.general.homebrew:
+    name: "{{ resolved_packages | selectattr('mgr', 'equalto', 'brew') | map(attribute='id') | list }}"
+    state: present
+  when:
+    - rl_os == 'macos'
+    - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'brew') | list | length) > 0
+
+- name: Install Homebrew casks (macOS)
+  community.general.homebrew_cask:
+    name: "{{ resolved_packages | selectattr('mgr', 'equalto', 'brew-cask') | map(attribute='id') | list }}"
+    state: present
+  when:
+    - rl_os == 'macos'
+    - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'brew-cask') | list | length) > 0
+
+- name: Install apt packages (Ubuntu/WSL)
+  ansible.builtin.apt:
+    name: "{{ resolved_packages | selectattr('mgr', 'equalto', 'apt') | map(attribute='id') | list }}"
+    state: present
+    update_cache: true
+  become: true
+  when:
+    - rl_context in ['wsl', 'linux']
+    - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'apt') | list | length) > 0
+
+- name: Install dnf packages (Fedora)
+  ansible.builtin.dnf:
+    name: "{{ resolved_packages | selectattr('mgr', 'equalto', 'dnf') | map(attribute='id') | list }}"
+    state: present
+  become: true
+  when:
+    - rl_context == 'fedora'
+    - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'dnf') | list | length) > 0
+
+- name: Install flatpak packages (Fedora)
+  community.general.flatpak:
+    name: "{{ resolved_packages | selectattr('mgr', 'equalto', 'flatpak') | map(attribute='id') | list }}"
+    state: present
+  become: true
+  when:
+    - rl_context == 'fedora'
+    - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'flatpak') | list | length) > 0

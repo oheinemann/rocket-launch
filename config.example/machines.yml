@@ -1,0 +1,24 @@
+---
+# machines.yml — maps each host to a set of reusable profiles.
+# Key = hostname (see `hostname`). Unknown hosts fall back to `defaults`.
+
+machines:
+  olli-thinkpad:
+    os: windows
+    profiles: [base, dev, workstation]
+    targets: [windows-host, wsl]      # provisioned on both host and WSL
+
+  olli-macbook:
+    os: macos
+    profiles: [base, dev, laptop]
+
+  olli-fedora-srv:
+    os: fedora
+    profiles: [base, server]
+
+  olli-mobile:
+    os: macos
+    profiles: [base, laptop]          # intentionally lean — no server/heavy dev
+
+defaults:
+  profiles: [base]
