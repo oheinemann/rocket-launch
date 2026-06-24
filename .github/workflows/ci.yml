@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint shell scripts
+  # ---------------------------------------------------------------------------
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck install.sh bin/rocket.sh lib/*.sh bootstrap/*.sh
+
+  # ---------------------------------------------------------------------------
+  # Lint PowerShell scripts (Windows host entry points)
+  # ---------------------------------------------------------------------------
+  powershell-lint:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $results = Invoke-ScriptAnalyzer -Path install.ps1, bootstrap/windows-host.ps1
+          $results | Format-Table -AutoSize
+          if ($results | Where-Object Severity -eq 'Error') {
+            Write-Error "PSScriptAnalyzer found errors."
+            exit 1
+          }
+
+  # ---------------------------------------------------------------------------
+  # Ansible syntax-check + dry-run on macOS and Ubuntu (WSL == Ubuntu)
+  # ---------------------------------------------------------------------------
+  ansible:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            context: wsl       # WSL provisioning == Ubuntu/apt
+          - os: macos-latest
+            context: macos
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ansible (pipx → on PATH, bundles community.general)
+        run: pipx install --include-deps ansible
+
+      - name: Install collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Syntax check
+        run: ansible-playbook --syntax-check site.yml
+
+      - name: Dry-run against example config
+        run: |
+          ansible-playbook site.yml --check \
+            -e rl_config_home=${{ github.workspace }}/config.example \
+            -e rl_context=${{ matrix.context }} \
+            -e rl_hostname=ci-host
+
+  # ---------------------------------------------------------------------------
+  # Ansible syntax-check + dry-run on Fedora (in a container)
+  # ---------------------------------------------------------------------------
+  ansible-fedora:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ansible
+        run: dnf install -y ansible-core git sudo   # sudo needed for become as root
+
+      - name: Install collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Syntax check
+        run: ansible-playbook --syntax-check site.yml
+
+      - name: Dry-run against example config
+        run: |
+          ansible-playbook site.yml --check \
+            -e rl_config_home=${GITHUB_WORKSPACE}/config.example \
+            -e rl_context=fedora \
+            -e rl_hostname=ci-host

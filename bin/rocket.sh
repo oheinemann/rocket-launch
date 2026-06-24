@@ -7,7 +7,7 @@
 #
 # Commands:
 #   bootstrap            Run Phase 0 (install git/ansible/chezmoi for this OS)
-#   provision            Run Phase 1 (ansible playbook + chezmoi apply)
+#   provision [--no-sudo]  Run Phase 1 (ansible playbook + chezmoi apply)
 #   doctor               Print detected environment and tool availability
 #   version              Print the engine version
 #   help                 Show this help
@@ -62,11 +62,14 @@ clone_or_update_config() {
 
 cmd_provision() {
   local config_repo="$RL_CONFIG_REPO_DEFAULT"
+  local no_sudo=false
+  local passthrough=()
   while [ $# -gt 0 ]; do
     case "$1" in
       --config) config_repo="$2"; shift 2 ;;
       --config=*) config_repo="${1#*=}"; shift ;;
-      *) shift ;;
+      --no-sudo) no_sudo=true; shift ;;
+      *) passthrough+=("$1"); shift ;;   # forwarded to ansible-playbook
     esac
   done
 
@@ -74,13 +77,25 @@ cmd_provision() {
 
   command -v ansible-playbook >/dev/null 2>&1 || abort "ansible-playbook missing — run 'rocket bootstrap' first."
 
+  # Prompt for the sudo password only when it's actually needed: if passwordless
+  # sudo already works, skip it; otherwise let ansible ask once. --no-sudo opts out.
+  local become_args=()
+  if [ "$no_sudo" != true ]; then
+    if ! sudo -n true 2>/dev/null; then
+      log "sudo needs a password — ansible will prompt once."
+      become_args+=(--ask-become-pass)
+    fi
+  fi
+
   log "Running ansible playbook"
   ansible-playbook \
     -i "$RL_HOME/ansible/inventory/local.yml" \
     -e "rl_config_home=$RL_CONFIG_HOME" \
     -e "rl_context=$RL_CONTEXT" \
     -e "rl_hostname=$(hostname)" \
-    "$RL_HOME/ansible/site.yml" "$@"
+    ${become_args[@]+"${become_args[@]}"} \
+    "$RL_HOME/ansible/site.yml" \
+    ${passthrough[@]+"${passthrough[@]}"}
 }
 
 main() {

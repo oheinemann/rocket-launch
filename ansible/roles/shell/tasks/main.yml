@@ -21,7 +21,8 @@
   ansible.builtin.command: command -v zsh
   register: zsh_path
   changed_when: false
-  failed_when: zsh_path.rc != 0
+  failed_when: false        # tolerate absence (e.g. during --check before install)
+  check_mode: false         # read-only: run even in --check
 
 # --- oh-my-zsh ---
 - name: Install oh-my-zsh
@@ -68,6 +69,7 @@
   when:
     - shell_install_nerd_fonts | bool
     - rl_os == 'linux'
+    - not ansible_check_mode   # dir is only simulated in --check; skip the download
   notify: Refresh font cache
 
 # --- default shell ---
@@ -79,4 +81,6 @@
   when:
     - shell_set_default | bool
     - shell_default == 'zsh'
+    - zsh_path.rc == 0
+    - zsh_path.stdout | length > 0
     - zsh_path.stdout not in (ansible_env.SHELL | default(''))

@@ -7,6 +7,7 @@
   register: chezmoi_check
   changed_when: false
   failed_when: false
+  check_mode: false
 
 - name: Skip dotfiles if chezmoi missing
   ansible.builtin.debug:
@@ -39,6 +40,7 @@
       register: op_status
       changed_when: false
       failed_when: false
+      check_mode: false
 
     - name: Warn if op:// references may fail
       ansible.builtin.debug:
