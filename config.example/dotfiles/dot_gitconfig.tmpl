@@ -1,0 +1,11 @@
+[user]
+    name = {{ .git.name }}
+    email = {{ .git.email }}
+    # Example: pull a commit-signing key from 1Password at apply time:
+    # signingkey = {{` {{ onepasswordRead "op://Private/Git Signing Key/public key" }} `}}
+[init]
+    defaultBranch = main
+[pull]
+    ff = only
+[push]
+    autoSetupRemote = true

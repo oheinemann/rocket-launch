@@ -1,0 +1,5 @@
+# Non-secret data available to chezmoi templates as {{ .git.name }} etc.
+# Secrets do NOT belong here — use op:// references in the templates instead.
+git:
+  name: "Your Name"
+  email: "you@example.com"

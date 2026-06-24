@@ -1,0 +1,71 @@
+---
+# Install the 1Password CLI (`op`), used by chezmoi to resolve op:// secret
+# references at apply time. GUI 1Password (and biometric unlock) is installed
+# on the host (macOS cask / Windows winget), not here.
+
+- name: Install & configure 1Password CLI
+  when: onepassword_install_cli | bool
+  block:
+    # --- macOS ---
+    - name: Install 1Password CLI (macOS)
+      community.general.homebrew_cask:
+        name: 1password-cli
+        state: present
+      when: rl_os == 'macos'
+
+    # --- Debian/Ubuntu/WSL ---
+    - name: Compute apt architecture
+      ansible.builtin.set_fact:
+        op_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+      when: rl_context in ['wsl', 'linux']
+
+    - name: Add 1Password signing key (apt)
+      ansible.builtin.get_url:
+        url: "{{ onepassword_key_url }}"
+        dest: /usr/share/keyrings/1password-archive-keyring.asc
+        mode: "0644"
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    - name: Add 1Password apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ op_apt_arch }} signed-by=/usr/share/keyrings/1password-archive-keyring.asc] https://downloads.1password.com/linux/debian/{{ op_apt_arch }} stable main"
+        filename: 1password
+        state: present
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    - name: Install 1Password CLI (apt)
+      ansible.builtin.apt:
+        name: 1password-cli
+        state: present
+        update_cache: true
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    # --- Fedora ---
+    - name: Import 1Password rpm key (Fedora)
+      ansible.builtin.rpm_key:
+        key: "{{ onepassword_key_url }}"
+        state: present
+      become: true
+      when: rl_context == 'fedora'
+
+    - name: Add 1Password dnf repository (Fedora)
+      ansible.builtin.yum_repository:
+        name: 1password
+        description: 1Password Stable Channel
+        baseurl: https://downloads.1password.com/linux/rpm/stable/$basearch
+        enabled: true
+        gpgcheck: true
+        repo_gpgcheck: true
+        gpgkey: "{{ onepassword_key_url }}"
+      become: true
+      when: rl_context == 'fedora'
+
+    - name: Install 1Password CLI (dnf)
+      ansible.builtin.dnf:
+        name: 1password-cli
+        state: present
+      become: true
+      when: rl_context == 'fedora'

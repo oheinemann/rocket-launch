@@ -27,5 +27,19 @@ curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/insta
 Add a new machine = one entry in `machines.yml`. Add a new app = add it to a
 profile and ensure it exists in the engine `package-map.yml`.
 
+## Dotfiles (chezmoi)
+
+`dotfiles/` is a chezmoi source dir. File names use chezmoi conventions:
+
+| Source name | Target | Notes |
+|-------------|--------|-------|
+| `dot_zshrc.tmpl` | `~/.zshrc` | templated (OS-aware) |
+| `dot_gitconfig.tmpl` | `~/.gitconfig` | name/email from `.chezmoidata.yaml` |
+| `dot_p10k.zsh` | `~/.p10k.zsh` | prompt config |
+| `.chezmoidata.yaml` | — | non-secret template data |
+
+Templates can pull secrets at apply time, e.g.
+`{{ onepasswordRead "op://Private/Item/field" }}`.
+
 > No real secrets belong in this repo — only `op://` references that chezmoi
 > resolves through the 1Password CLI at apply time.

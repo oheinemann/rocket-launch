@@ -1,0 +1,11 @@
+---
+# WireGuard (optional, Phase C+). Stub.
+# Plan: install wireguard-tools per OS, then materialize the tunnel config from
+# a 1Password reference at apply time, e.g.:
+#   op read "op://Private/WireGuard Home/document" > ~/.config/wireguard/home.conf
+# Keep the actual config out of any repo — only the op:// reference lives in
+# the config repo (secrets.yml).
+
+- name: WireGuard role placeholder
+  ansible.builtin.debug:
+    msg: "wireguard role: not implemented yet (planned: wireguard-tools + op-sourced config)."

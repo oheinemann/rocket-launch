@@ -42,7 +42,10 @@ export RL_CONFIG_REPO
 # Locate engine sources: either we run from a checkout, or we bootstrap from
 # the network (curl | bash) and need a temporary copy to source helpers from.
 # ----------------------------------------------------------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+SCRIPT_DIR=""
+if _rl_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"; then
+  SCRIPT_DIR="$_rl_dir"
+fi
 if [ -f "$SCRIPT_DIR/lib/detect-os.sh" ]; then
   RL_SRC="$SCRIPT_DIR"
 else

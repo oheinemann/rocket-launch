@@ -1,7 +1,82 @@
 ---
-# Shell / runtime setup (Phase A stub).
-# Phase C will port the v1 zsh/oh-my-zsh/p10k setup here, data-driven per profile.
+# Install the shell runtime: zsh + oh-my-zsh + powerlevel10k + Nerd Fonts.
+# NOTE: dotfile *content* (.zshrc, .p10k.zsh) is managed by chezmoi, not here.
+# This role only installs the programs the dotfiles rely on.
 
-- name: Shell role placeholder
-  ansible.builtin.debug:
-    msg: "shell role: nothing to do yet (planned: zsh, oh-my-zsh, prompt, nerdfonts)."
+# --- zsh ---
+- name: Install zsh (macOS)
+  community.general.homebrew:
+    name: zsh
+    state: present
+  when: rl_os == 'macos'
+
+- name: Install zsh (Linux)
+  ansible.builtin.package:
+    name: zsh
+    state: present
+  become: true
+  when: rl_os == 'linux'
+
+- name: Resolve zsh path
+  ansible.builtin.command: command -v zsh
+  register: zsh_path
+  changed_when: false
+  failed_when: zsh_path.rc != 0
+
+# --- oh-my-zsh ---
+- name: Install oh-my-zsh
+  ansible.builtin.git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: "{{ ansible_env.HOME }}/.oh-my-zsh"
+    depth: 1
+    version: master
+  when: shell_install_omz | bool
+
+# --- powerlevel10k (as an oh-my-zsh custom theme) ---
+- name: Install powerlevel10k
+  ansible.builtin.git:
+    repo: https://github.com/romkatv/powerlevel10k.git
+    dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/powerlevel10k"
+    depth: 1
+    version: master
+  when: shell_install_p10k | bool
+
+# --- Nerd Fonts ---
+- name: Install Nerd Font (macOS via cask)
+  community.general.homebrew_cask:
+    name: "font-meslo-lg-nerd-font"
+    state: present
+  when:
+    - shell_install_nerd_fonts | bool
+    - rl_os == 'macos'
+
+- name: Ensure local font dir (Linux)
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.local/share/fonts"
+    state: directory
+    mode: "0755"
+  when:
+    - shell_install_nerd_fonts | bool
+    - rl_os == 'linux'
+
+- name: Download & install Nerd Font (Linux)
+  ansible.builtin.unarchive:
+    src: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerd_font_version }}/{{ nerd_font_name }}.zip"
+    dest: "{{ ansible_env.HOME }}/.local/share/fonts"
+    remote_src: true
+    creates: "{{ ansible_env.HOME }}/.local/share/fonts/MesloLGSNerdFont-Regular.ttf"
+  when:
+    - shell_install_nerd_fonts | bool
+    - rl_os == 'linux'
+  notify: Refresh font cache
+
+# --- default shell ---
+- name: Set default shell
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    shell: "{{ zsh_path.stdout }}"
+  become: true
+  when:
+    - shell_set_default | bool
+    - shell_default == 'zsh'
+    - zsh_path.stdout not in (ansible_env.SHELL | default(''))

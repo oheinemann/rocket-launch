@@ -1,0 +1,22 @@
+# Managed by chezmoi (rocket-launch). Edit in the config repo, then `chezmoi apply`.
+
+# Powerlevel10k instant prompt (keep near the top).
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+plugins=(git fzf)
+source "$ZSH/oh-my-zsh.sh"
+
+# rocket-launch CLI on PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+{{ if eq .chezmoi.os "darwin" -}}
+# macOS: Homebrew environment (Apple Silicon path).
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+{{ end -}}
+
+# Prompt config.
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh

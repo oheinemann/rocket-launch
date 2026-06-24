@@ -39,7 +39,7 @@ cmd_doctor() {
     if command -v "$t" >/dev/null 2>&1; then
       printf "  %-16s %s\n" "$t" "$(command -v "$t")"
     else
-      printf "  %-16s ${RL_RED}missing${RL_END}\n" "$t"
+      printf '  %-16s %smissing%s\n' "$t" "$RL_RED" "$RL_END"
     fi
   done
 }

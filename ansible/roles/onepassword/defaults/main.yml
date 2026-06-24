@@ -1,0 +1,4 @@
+---
+onepassword_install_cli: true
+# apt/rpm signing key + repo base (official 1Password Linux package sources).
+onepassword_key_url: https://downloads.1password.com/linux/keys/1password.asc

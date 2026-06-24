@@ -56,7 +56,7 @@
 
   roles:
     - role: packages       # install resolved apps via the right OS manager
-    - role: shell          # shell/runtime setup (stub)
+    - role: shell          # zsh + oh-my-zsh + p10k + Nerd Fonts
+    - role: onepassword    # 1Password CLI (op) — needed by chezmoi for op://
     - role: chezmoi        # dotfiles + secrets via chezmoi
-    # - role: onepassword  # Phase C: 1Password CLI + SSH agent
-    # - role: wireguard    # Phase C: VPN config from op:// references
+    # - role: wireguard    # optional: VPN config materialized from op:// refs
