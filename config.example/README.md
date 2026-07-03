@@ -89,6 +89,37 @@ Once enabled:
 - `ssh -T git@github.com` works via the 1Password SSH agent
 - chezmoi `op://` references resolve seamlessly
 
+## DDEV (Local Development Environment)
+
+DDEV is installed via the dedicated `ddev` role (not through `package-map.yml`),
+automatically triggered when the `dev` profile is active. The role:
+
+1. Verifies Docker is available (prerequisite check)
+2. Installs DDEV via Homebrew tap (macOS) or apt/dnf repo (Linux/WSL/Fedora)
+3. Installs mkcert for trusted local HTTPS certificates
+4. Runs `mkcert -install` to register the local CA in the system trust store
+
+### Control Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ddev_install` | `true` | Install DDEV |
+| `ddev_install_mkcert` | `true` | Install mkcert |
+| `ddev_run_mkcert_install` | `true` | Run `mkcert -install` to set up local CA |
+
+### WSL2 Browser Trust (Manual)
+
+For browsers on the **Windows host** to trust DDEV's local HTTPS certificates,
+the mkcert CA must be shared between WSL and Windows. The exact steps may vary
+by DDEV/mkcert version — consult the current DDEV documentation:
+
+- [ ] **Option A (recommended):** Set `CAROOT` in WSL to a Windows-accessible path
+      (e.g., `/mnt/c/Users/YourName/.mkcert`) and run `mkcert -install` on both sides
+- [ ] **Option B:** Copy the CA files from WSL's `$(mkcert -CAROOT)` to Windows
+      and import `rootCA.pem` into the Windows certificate store
+
+Once configured, DDEV sites will show trusted HTTPS in Chrome/Edge/Firefox on Windows.
+
 ## Dotfiles (chezmoi)
 
 `dotfiles/` is a chezmoi source dir. File names use chezmoi conventions:

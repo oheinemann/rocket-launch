@@ -1,5 +1,10 @@
 ---
 # dev — developer tooling.
+#
+# DDEV is installed via the dedicated `ddev` role (triggered automatically when
+# this profile is active). Do NOT add ddev/mkcert here — they are not in
+# package-map.yml because they require custom repos per OS (like onepassword).
+#
 packages:
   - docker
   - vscode

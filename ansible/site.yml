@@ -86,4 +86,6 @@
       vars:
         macos_defaults: "{{ selected_macos_defaults | default([]) }}"
       when: rl_os == 'macos'
+    - role: ddev           # DDEV local dev environment (requires Docker)
+      when: "'dev' in host_profiles and (ddev_install | default(true) | bool)"
     # - role: wireguard    # optional: VPN config materialized from op:// refs

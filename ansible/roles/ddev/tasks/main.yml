@@ -1,0 +1,164 @@
+---
+# Install DDEV (primary local dev environment for TYPO3/Laravel).
+# DDEV requires Docker (RL-10) and uses mkcert for local HTTPS certificates.
+# Sources: https://ddev.readthedocs.io/en/stable/users/install/
+
+# =============================================================================
+# Pre-Flight: Docker must be available
+# =============================================================================
+
+- name: Check if Docker is available
+  ansible.builtin.command: docker --version
+  register: docker_check
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: Fail if Docker is not available (skip in check mode)
+  ansible.builtin.fail:
+    msg: >-
+      DDEV requires Docker — install the 'docker' package first (see RL-10).
+      Docker command not found or not accessible.
+  when:
+    - not ansible_check_mode
+    - docker_check.rc != 0
+
+# =============================================================================
+# DDEV Installation
+# =============================================================================
+
+- name: Install DDEV
+  when: ddev_install | bool
+  block:
+    # --- macOS ---
+    - name: Add DDEV Homebrew tap (macOS)
+      community.general.homebrew_tap:
+        name: ddev/ddev
+        state: present
+      when: rl_os == 'macos'
+
+    - name: Install DDEV (macOS)
+      community.general.homebrew:
+        name: ddev
+        state: present
+      when: rl_os == 'macos'
+
+    # --- Debian/Ubuntu/WSL ---
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    - name: Add DDEV signing key (apt)
+      ansible.builtin.get_url:
+        url: https://pkg.ddev.com/apt/gpg.key
+        dest: /etc/apt/keyrings/ddev.asc
+        mode: "0644"
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    - name: Add DDEV apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/ddev.asc] https://pkg.ddev.com/apt/ * *"
+        filename: ddev
+        state: present
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    - name: Install DDEV (apt)
+      ansible.builtin.apt:
+        name: ddev
+        state: present
+        update_cache: true
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    # --- Fedora ---
+    # NOTE: DDEV yum repo is currently UNSIGNED. gpgcheck disabled intentionally.
+    # Official DDEV docs: "Signed yum repository support will be added in the future."
+    - name: Add DDEV dnf repository (Fedora)
+      ansible.builtin.yum_repository:
+        name: ddev
+        description: DDEV Repository
+        baseurl: https://pkg.ddev.com/yum/
+        enabled: true
+        gpgcheck: false
+      become: true
+      when: rl_context == 'fedora'
+
+    - name: Install DDEV (dnf)
+      ansible.builtin.dnf:
+        name: ddev
+        state: present
+      become: true
+      when: rl_context == 'fedora'
+
+# =============================================================================
+# mkcert Installation (for trusted local HTTPS certificates)
+# =============================================================================
+
+- name: Install mkcert
+  when: ddev_install_mkcert | bool
+  block:
+    # --- macOS ---
+    - name: Install mkcert (macOS)
+      community.general.homebrew:
+        name: mkcert
+        state: present
+      when: rl_os == 'macos'
+
+    # --- Debian/Ubuntu/WSL ---
+    # NOTE: mkcert availability in apt varies by distro/version. Ubuntu 22.04+ has it
+    # in universe. If not available, manual binary install is needed (see DDEV docs).
+    - name: Install mkcert and libnss3-tools (apt)
+      ansible.builtin.apt:
+        name:
+          - mkcert
+          - libnss3-tools
+        state: present
+      become: true
+      when: rl_context in ['wsl', 'linux']
+
+    # --- Fedora ---
+    - name: Install mkcert and nss-tools (dnf)
+      ansible.builtin.dnf:
+        name:
+          - mkcert
+          - nss-tools
+        state: present
+      become: true
+      when: rl_context == 'fedora'
+
+# =============================================================================
+# mkcert -install (register local CA in system trust store)
+# =============================================================================
+
+- name: Configure mkcert CA
+  when:
+    - ddev_install_mkcert | bool
+    - ddev_run_mkcert_install | bool
+  block:
+    - name: Get mkcert CAROOT path
+      ansible.builtin.command: mkcert -CAROOT
+      register: mkcert_caroot
+      check_mode: false
+      changed_when: false
+      failed_when: false
+
+    - name: Check if mkcert CA is already installed
+      ansible.builtin.stat:
+        path: "{{ mkcert_caroot.stdout | default('') }}/rootCA.pem"
+      register: mkcert_ca_file
+      when: mkcert_caroot.rc == 0
+
+    - name: Install mkcert CA to system trust store
+      ansible.builtin.command: mkcert -install
+      register: mkcert_install_result
+      changed_when: "'The local CA is now installed' in mkcert_install_result.stdout or 'Created a new local CA' in mkcert_install_result.stdout"
+      when:
+        - not ansible_check_mode
+        - mkcert_caroot.rc == 0
+        - not (mkcert_ca_file.stat.exists | default(false))

@@ -1,0 +1,7 @@
+---
+# DDEV role defaults.
+# The role is triggered by "'dev' in host_profiles" in site.yml.
+
+ddev_install: true
+ddev_install_mkcert: true
+ddev_run_mkcert_install: true
