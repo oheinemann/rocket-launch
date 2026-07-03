@@ -46,6 +46,28 @@
       ansible.builtin.set_fact:
         selected_packages: "{{ selected_packages | default([]) | unique }}"
 
+    - name: Accumulate macos_defaults from all selected profiles
+      ansible.builtin.set_fact:
+        selected_macos_defaults: >-
+          {{ (selected_macos_defaults | default([])) +
+             ((lookup('file', rl_config_home ~ '/profiles/' ~ item ~ '.yml')
+               | from_yaml).macos_defaults | default([])) }}
+      loop: "{{ host_profiles }}"
+
+    # Deduplicate macos_defaults: build dict keyed by domain/key, last wins.
+    - name: Deduplicate macos_defaults (by domain+key, last wins)
+      ansible.builtin.set_fact:
+        selected_macos_defaults: >-
+          {{ dict(selected_macos_defaults | default([])
+                  | map(attribute='domain')
+                  | zip(selected_macos_defaults | default([])
+                        | map(attribute='key'))
+                  | map('join', '/')
+                  | zip(selected_macos_defaults | default([])))
+             | dict2items
+             | map(attribute='value')
+             | list }}
+
     - name: Show resolution summary
       ansible.builtin.debug:
         msg:
@@ -53,10 +75,15 @@
           - "context    : {{ rl_context }}  (os={{ rl_os }})"
           - "profiles   : {{ host_profiles }}"
           - "packages   : {{ selected_packages }}"
+          - "macos_defaults: {{ selected_macos_defaults | length }} entries"
 
   roles:
     - role: packages       # install resolved apps via the right OS manager
     - role: shell          # zsh + oh-my-zsh + p10k + Nerd Fonts
     - role: onepassword    # 1Password CLI (op) — needed by chezmoi for op://
     - role: chezmoi        # dotfiles + secrets via chezmoi
+    - role: macos-defaults # macOS system defaults (Dock, Finder, keyboard, etc.)
+      vars:
+        macos_defaults: "{{ selected_macos_defaults | default([]) }}"
+      when: rl_os == 'macos'
     # - role: wireguard    # optional: VPN config materialized from op:// refs

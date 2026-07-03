@@ -1,0 +1,21 @@
+---
+# Apply macOS system defaults from config profiles.
+# Uses community.general.osx_defaults for idempotent, check-mode-safe operations.
+# This role is mac-only; it is skipped on other platforms via site.yml condition.
+
+- name: Apply macOS defaults
+  community.general.osx_defaults:
+    domain: "{{ item.domain }}"
+    key: "{{ item.key }}"
+    type: "{{ item.type }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ macos_defaults }}"
+  loop_control:
+    label: "{{ item.domain }}/{{ item.key }}"
+  register: defaults_result
+  notify:
+    - Restart Dock
+    - Restart Finder
+    - Restart SystemUIServer
+  when: macos_defaults | length > 0

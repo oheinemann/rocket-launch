@@ -1,0 +1,25 @@
+---
+# macos — macOS-specific system defaults (Dock, Finder, keyboard, etc.).
+# Applied only on macOS via the macos-defaults role; skipped on Linux/WSL.
+#
+# Capture workflow: run `defaults read > before.txt`, configure System Settings
+# manually, then `defaults read > after.txt` and `diff before.txt after.txt` to
+# identify changed domains/keys. Add relevant entries here.
+
+packages: []
+
+macos_defaults:
+  # Dock: auto-hide for more screen space
+  - { domain: com.apple.dock, key: autohide, type: bool, value: true }
+
+  # Finder: show path bar at the bottom
+  - { domain: com.apple.finder, key: ShowPathbar, type: bool, value: true }
+
+  # Finder: show status bar
+  - { domain: com.apple.finder, key: ShowStatusBar, type: bool, value: true }
+
+  # Keyboard: fast key repeat (lower = faster; 2 is very fast)
+  - { domain: NSGlobalDomain, key: KeyRepeat, type: int, value: 2 }
+
+  # Keyboard: short delay until repeat (lower = shorter; 15 is responsive)
+  - { domain: NSGlobalDomain, key: InitialKeyRepeat, type: int, value: 15 }

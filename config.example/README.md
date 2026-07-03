@@ -27,6 +27,41 @@ curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/insta
 Add a new machine = one entry in `machines.yml`. Add a new app = add it to a
 profile and ensure it exists in the engine `package-map.yml`.
 
+## macOS Defaults
+
+On macOS hosts, the `macos-defaults` role applies system settings from the
+`macos_defaults` key in profiles. These are applied idempotently using
+`osx_defaults` (no raw `defaults write`).
+
+### Capture Workflow
+
+To capture new settings from a fresh Mac:
+
+1. **Snapshot before:** `defaults read > ~/before.txt`
+2. **Configure manually:** Use System Settings, Finder preferences, etc.
+3. **Snapshot after:** `defaults read > ~/after.txt`
+4. **Diff:** `diff ~/before.txt ~/after.txt` shows exactly which domains/keys changed.
+5. **Add to profile:** Copy relevant entries to `profiles/macos.yml` as
+   `macos_defaults` entries with `{domain, key, type, value}`.
+
+### App Preferences — Where to Put What
+
+| Preference Class | Examples | Managed By |
+|-----------------|----------|------------|
+| `defaults` domain | iTerm2, Terminal, Rectangle, Raycast (partly) | `macos_defaults` in profile |
+| File in `~` or `~/.config` | VS Code `settings.json`, `.editorconfig` | chezmoi (`chezmoi add`) |
+| App-Store sync / GUI login | Raycast Cloud, app-specific sync accounts | Manual (see checklist below) |
+
+### Manual Checklist (Not Automatable)
+
+These require manual setup after provisioning:
+
+- [ ] **App Permissions / TCC:** Camera, Microphone, Full Disk Access, Accessibility
+      (System Settings > Privacy & Security)
+- [ ] **Login Items:** Apps that start at login (System Settings > General > Login Items)
+- [ ] **App Store / iCloud:** Sign in to App Store, iCloud (for app sync)
+- [ ] **App-specific cloud sync:** Raycast sync, 1Password account, etc.
+
 ## Dotfiles (chezmoi)
 
 `dotfiles/` is a chezmoi source dir. File names use chezmoi conventions:

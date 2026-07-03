@@ -10,7 +10,7 @@ machines:
 
   olli-macbook:
     os: macos
-    profiles: [base, dev, laptop]
+    profiles: [base, dev, laptop, macos]
 
   olli-fedora-srv:
     os: fedora
@@ -18,7 +18,7 @@ machines:
 
   olli-mobile:
     os: macos
-    profiles: [base, laptop]          # intentionally lean — no server/heavy dev
+    profiles: [base, laptop, macos]   # intentionally lean — no server/heavy dev
 
 defaults:
   profiles: [base]

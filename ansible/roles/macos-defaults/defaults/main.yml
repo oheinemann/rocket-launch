@@ -1,0 +1,5 @@
+---
+# macos-defaults role defaults.
+# The actual list of defaults is provided by config profiles (macos_defaults key).
+# This file provides an empty default to avoid undefined variable errors.
+macos_defaults: []
