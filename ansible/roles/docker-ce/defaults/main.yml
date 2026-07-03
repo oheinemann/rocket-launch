@@ -1,0 +1,6 @@
+---
+# docker-ce role defaults.
+# The role is triggered by "'docker' in selected_packages" and
+# "rl_context in ['fedora', 'linux', 'wsl']" in site.yml.
+
+docker_install: true

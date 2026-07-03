@@ -89,6 +89,51 @@ Once enabled:
 - `ssh -T git@github.com` works via the 1Password SSH agent
 - chezmoi `op://` references resolve seamlessly
 
+## Docker "Wohin" Doctrine
+
+| Context | Docker Source | Notes |
+|---------|---------------|-------|
+| **macOS** | OrbStack (brew-cask) | Installed via package-map |
+| **WSL2** | native docker-ce (apt) | `docker-ce` role, requires systemd |
+| **Fedora** | docker-ce (dnf) | `docker-ce` role |
+| **Linux-Desktop** | docker-ce (apt) | `docker-ce` role |
+| **Windows-Host** | — | Not needed; Docker runs in WSL |
+
+The `docker-ce` role installs Docker from the official `download.docker.com`
+repository (not the conflicting `docker.io` / `moby` packages from distro repos).
+
+### Post-Provision: docker Group
+
+After provisioning, the current user is added to the `docker` group. This change
+requires a **new login session** to take effect:
+
+```bash
+# Option 1: Log out and back in
+# Option 2: Start a new group session (current shell only)
+newgrp docker
+# Verify:
+docker run hello-world
+```
+
+### WSL2 systemd Checklist (Manual)
+
+WSL2 requires systemd to run the Docker service. The `docker-ce` role enables
+this in `/etc/wsl.conf`, but a manual restart is required:
+
+- [ ] **Verify wsl.conf:** Check that `/etc/wsl.conf` contains:
+      ```ini
+      [boot]
+      systemd=true
+      ```
+- [ ] **Restart WSL (from Windows PowerShell):**
+      ```powershell
+      wsl --shutdown
+      ```
+- [ ] **Reopen WSL terminal** — systemd should now be running
+- [ ] **Verify Docker:** `docker run hello-world` (without sudo)
+
+If Docker still fails after restart, check `systemctl status docker`.
+
 ## DDEV (Local Development Environment)
 
 DDEV is installed via the dedicated `ddev` role (not through `package-map.yml`),

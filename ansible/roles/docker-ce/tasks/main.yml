@@ -1,0 +1,164 @@
+---
+# Install Docker CE from the official Docker repository (download.docker.com).
+# This role handles Fedora, Debian/Ubuntu, and WSL2 — macOS uses OrbStack via
+# package-map (brew-cask). Replaces the problematic apt docker.io / dnf docker
+# mappings that conflict with containerd.io.
+#
+# Sources: https://docs.docker.com/engine/install/
+
+- name: Install Docker CE
+  when: docker_install | bool
+  block:
+
+    # =========================================================================
+    # Fedora
+    # =========================================================================
+
+    - name: Remove conflicting packages (Fedora)
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - docker-client
+          - docker-client-latest
+          - docker-common
+          - docker-latest
+          - docker-latest-logrotate
+          - docker-logrotate
+          - docker-selinux
+          - docker-engine-selinux
+          - docker-engine
+          - podman-docker
+        state: absent
+      become: true
+      when: rl_context == 'fedora'
+
+    - name: Add Docker CE dnf repository (Fedora)
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/fedora/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: "0644"
+      become: true
+      when: rl_context == 'fedora'
+
+    - name: Install Docker CE (Fedora)
+      ansible.builtin.dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+      become: true
+      when: rl_context == 'fedora'
+
+    # =========================================================================
+    # Debian/Ubuntu/WSL (apt-based)
+    # =========================================================================
+
+    - name: Remove conflicting packages (apt)
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+          - docker-compose-v2
+          - docker-doc
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+      become: true
+      when: rl_context in ['linux', 'wsl']
+
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+      become: true
+      when: rl_context in ['linux', 'wsl']
+
+    - name: Add Docker signing key (apt)
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+      become: true
+      when: rl_context in ['linux', 'wsl']
+
+    - name: Compute apt architecture
+      ansible.builtin.set_fact:
+        docker_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+      when: rl_context in ['linux', 'wsl']
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+        filename: docker
+        state: present
+      become: true
+      when: rl_context in ['linux', 'wsl']
+
+    - name: Install Docker CE (apt)
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+      become: true
+      when: rl_context in ['linux', 'wsl']
+
+    # =========================================================================
+    # WSL-specific: enable systemd
+    # =========================================================================
+    # WSL2 needs systemd=true in /etc/wsl.conf for the docker service to start.
+    # IMPORTANT: After this change, user must run `wsl --shutdown` from Windows
+    # PowerShell once, then restart WSL. This is a manual step documented in
+    # config.example/README.md.
+
+    - name: Enable systemd in WSL (wsl.conf)
+      community.general.ini_file:
+        path: /etc/wsl.conf
+        section: boot
+        option: systemd
+        value: "true"
+        mode: "0644"
+      become: true
+      when: rl_context == 'wsl'
+
+    # =========================================================================
+    # Post-Install: enable service and add user to docker group
+    # =========================================================================
+    # NOTE: In --check mode or when systemd is not (yet) running (e.g., fresh
+    # WSL before wsl --shutdown), this task may fail. We tolerate failures in
+    # check mode and when systemd isn't the init system. The service will start
+    # properly after a WSL restart with systemd enabled.
+
+    - name: Enable and start Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+      become: true
+      register: docker_service_result
+      failed_when:
+        - docker_service_result is failed
+        - not ansible_check_mode
+        - ansible_service_mgr == 'systemd'
+      when: rl_context in ['fedora', 'linux', 'wsl']
+
+    # NOTE: Group membership change requires a new login session to take effect.
+    # User will need to log out and back in (or run `newgrp docker`) before
+    # running docker commands without sudo.
+
+    - name: Add current user to docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: true
+      become: true
+      when: rl_context in ['fedora', 'linux', 'wsl']

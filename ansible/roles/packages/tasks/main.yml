@@ -2,6 +2,14 @@
 # Resolve logical packages via the package map and install them with the
 # manager that matches the current OS/context.
 
+# Packages managed by dedicated roles (not via package-map on Linux/WSL).
+# These are excluded from the "unresolved" report to avoid false positives.
+# On macOS they still resolve via package-map; on Linux/WSL the role handles them.
+- name: Define role-managed packages
+  ansible.builtin.set_fact:
+    packages_role_managed:
+      - docker  # RL-10: docker-ce role handles this on Linux/WSL
+
 - name: Determine package-map OS key
   ansible.builtin.set_fact:
     pkg_os_key: "{{ 'macos' if rl_os == 'macos' else ('dnf' if rl_context == 'fedora' else 'apt') }}"
@@ -18,7 +26,9 @@
   ansible.builtin.debug:
     msg: "Skipping '{{ item }}' — no '{{ pkg_os_key }}' mapping in package-map.yml."
   loop: "{{ selected_packages }}"
-  when: item not in package_map or pkg_os_key not in (package_map[item] | default({}))
+  when:
+    - item not in packages_role_managed
+    - item not in package_map or pkg_os_key not in (package_map[item] | default({}))
 
 - name: Install Homebrew formulae (macOS)
   community.general.homebrew:
