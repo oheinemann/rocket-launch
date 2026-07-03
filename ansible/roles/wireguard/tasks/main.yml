@@ -1,7 +1,7 @@
 ---
 # Install WireGuard tools and optionally materialize tunnel config from 1Password.
 # Triggered by "'laptop' in host_profiles" — mobile devices that need VPN access.
-# Fixed desktops (workstation profile) do not get WireGuard.
+# Non-laptop hosts (fixed desktops / servers) do not get WireGuard.
 #
 # Usage: Manual connection via `sudo wg-quick up ~/.config/wireguard/wg0.conf`
 # No autostart — connect only when needed (outside home network).

@@ -1,4 +1,0 @@
----
-# workstation — fixed desktop role marker. Personal apps (slack, teams, browsers …)
-# now live in the `personal` profile; add here only apps exclusive to fixed desks.
-packages: []
