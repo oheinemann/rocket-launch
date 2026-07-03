@@ -21,14 +21,13 @@ machines:
     profiles: [base, dev, laptop, macos, personal]
     # WireGuard ref auto-derived: op://Private/example-macbook/config
 
-  example-server:
+  example-fedora:
     os: fedora
-    profiles: [base, server]
-    # No personal profile — headless server, no GUI apps.
+    profiles: [base, dev, personal]
 
   example-laptop:
     os: macos
-    profiles: [base, laptop, macos, personal]   # intentionally lean — no server/heavy dev
+    profiles: [base, laptop, macos, personal]   # intentionally lean — no heavy dev tooling
     wireguard_op_ref: "op://Work/WireGuard-Laptop/config"   # example override (custom vault/item)
 
 defaults:
