@@ -44,6 +44,12 @@ slack:
   dnf:   { mgr: flatpak,   id: com.slack.Slack }
   # On WSL, Slack lives on the Windows host (see config windows-host.txt).
 
+teams:
+  # Microsoft Teams — macOS + Windows only. No native Linux client (discontinued).
+  macos: { mgr: brew-cask, id: microsoft-teams }
+  # On Windows host: winget Microsoft.Teams (see config windows-host.txt).
+  # Kept in the packages role-managed ignore list so it is not flagged on Linux.
+
 claude:
   # Claude Desktop — GUI app, macOS + Windows only. No official Linux package.
   macos: { mgr: brew-cask, id: claude }
