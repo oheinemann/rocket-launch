@@ -49,6 +49,36 @@
     - rl_os == 'macos'
     - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'brew-cask') | list | length) > 0
 
+# Mac App Store apps use the `mas` manager. mas-cli is installed on demand (only
+# when a mas app is requested). Requires being signed into the App Store; apps
+# must already be associated with the Apple ID. See config first-run-macos.md.
+- name: Install Mac App Store CLI (macOS, when mas apps requested)
+  community.general.homebrew:
+    name: mas
+    state: present
+  when:
+    - rl_os == 'macos'
+    - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'mas') | list | length) > 0
+
+- name: Install Mac App Store apps (macOS)
+  community.general.mas:
+    id: "{{ resolved_packages | selectattr('mgr', 'equalto', 'mas') | map(attribute='id') | list }}"
+    state: present
+  register: mas_result
+  ignore_errors: true      # keep provisioning going if App Store isn't signed in
+  when:
+    - rl_os == 'macos'
+    - (resolved_packages | default([]) | selectattr('mgr', 'equalto', 'mas') | list | length) > 0
+
+- name: Note if Mac App Store install failed
+  ansible.builtin.debug:
+    msg: >-
+      mas install failed — sign into the App Store (and make sure each app was
+      previously obtained on this Apple ID), then re-run provisioning.
+  when:
+    - mas_result is defined
+    - mas_result.failed | default(false)
+
 - name: Install apt packages (Ubuntu/WSL)
   ansible.builtin.apt:
     name: "{{ resolved_packages | selectattr('mgr', 'equalto', 'apt') | map(attribute='id') | list }}"

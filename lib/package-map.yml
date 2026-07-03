@@ -90,3 +90,11 @@ spark:
   # Spark Mail — GUI app, macOS + Windows only. No official Linux package.
   macos: { mgr: brew-cask, id: readdle-spark }
   # On Windows host: winget Readdle.Spark (see config windows-host.txt).
+
+# --- Mac App Store (mas) ---
+# App Store apps use the `mas` manager with the numeric App Store id. The engine
+# installs mas-cli on demand; you must be signed into the App Store and the app
+# must already be associated with your Apple ID. Find ids with `mas search <name>`.
+# Example (uncomment + verify the id, then reference the key from a profile):
+# amphetamine:
+#   macos: { mgr: mas, id: 937984704 }   # verify: `mas search Amphetamine`

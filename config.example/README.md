@@ -29,6 +29,11 @@ curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/insta
 Add a new machine = one entry in `machines.yml`. Add a new app = add it to a
 profile and ensure it exists in the engine `package-map.yml`.
 
+**Mac App Store apps (`mas`):** map an app to `{ mgr: mas, id: <App-Store-id> }`
+on macOS. Find the id with `mas search <name>`. The engine installs the `mas` CLI
+on demand, but you must be **signed into the App Store** and the app must already
+be associated with your Apple ID — otherwise the install is skipped with a note.
+
 ## Personal Profile
 
 The `personal` profile bundles GUI apps you want on every machine with a display:
