@@ -1,0 +1,17 @@
+# syncthing.txt — Windows host Syncthing config (device IDs are NOT secret)
+#
+# This file configures Syncthing on the Windows host (bootstrap/windows-host.ps1).
+# For macOS/Linux, Syncthing is configured via the Ansible syncthing role.
+#
+# Format: key = value (one per line, # = comment)
+
+# Synology Device ID — required for device pairing.
+# Find it in your Synology Syncthing web UI: Actions > Show ID.
+# Without this, device/folder configuration is skipped (only autostart is set up).
+# synology_device_id = XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX
+
+# Folder ID — must match the folder ID on the Synology
+folder_id   = sync-vault
+
+# Folder path on Windows — supports environment variables
+folder_path = %USERPROFILE%\Sync

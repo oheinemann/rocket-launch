@@ -343,28 +343,30 @@ Syncthing is installed on devices with the `personal` profile and syncs the
 
 ### Installation per OS
 
-| Context | Install | Service |
-|---------|---------|---------|
-| macOS | `brew install syncthing` | `brew services` (launchd, user) |
-| Fedora | `dnf install syncthing` | `systemd --user` + `loginctl enable-linger` |
-| Debian/Ubuntu | apt (syncthing.net repo) | `systemd --user` + `loginctl enable-linger` |
-| **WSL** | skipped | runs on Windows host |
-| Windows-Host | winget `Syncthing.Syncthing` | Tray app |
+| Context | Install | Service | Config |
+|---------|---------|---------|--------|
+| macOS | `brew install syncthing` | `brew services` (launchd, user) | Ansible role (REST API) |
+| Fedora | `dnf install syncthing` | `systemd --user` + `loginctl enable-linger` | Ansible role (REST API) |
+| Debian/Ubuntu | apt (syncthing.net repo) | `systemd --user` + `loginctl enable-linger` | Ansible role (REST API) |
+| **WSL** | skipped | runs on Windows host | — |
+| **Windows-Host** | winget `Syncthing.Syncthing` | Task Scheduler (autostart) | `windows-host.ps1` (REST API) |
 
 ### REST API Configuration
 
-After the service starts, the role configures Syncthing via its REST API:
+After the service starts, Syncthing is configured via its REST API:
 
-1. Adds the Synology as a remote device (Device ID from 1Password)
-2. Creates the `~/Sync` folder shared with the Synology
+1. Adds the Synology as a remote device (Device ID)
+2. Creates the sync folder shared with the Synology
 
-The Synology Device ID is read from 1Password at runtime:
+**macOS / Linux:** The Synology Device ID is read from 1Password at runtime:
 
 ```
 syncthing_synology_op_ref: "op://Private/Syncthing-Synology/device-id"
 ```
 
 Override per host in `machines.yml` if needed.
+
+**Windows Host:** The configuration is read from `syncthing.txt` (see below).
 
 ### loginctl enable-linger (Linux)
 
@@ -389,6 +391,10 @@ After acceptance, the folder will start syncing.
 For WSL machines, Syncthing is **not** installed inside WSL. Instead, Syncthing
 runs on the Windows host (via winget: `Syncthing.Syncthing` in `windows-host.txt`).
 
+The Windows bootstrap script (`windows-host.ps1`) automatically:
+- Creates a Task Scheduler entry for autostart at logon
+- Configures Syncthing via REST API (device + folder)
+
 If WSL needs access to the synced folder, create a symlink via chezmoi:
 
 ```bash
@@ -397,6 +403,56 @@ ln -s /mnt/c/Users/<username>/Sync ~/Sync
 ```
 
 The exact path depends on your Windows Syncthing configuration.
+
+### Windows Host: syncthing.txt
+
+Create `syncthing.txt` in your config repo to configure Syncthing on Windows:
+
+```
+# syncthing.txt — Windows host Syncthing config
+# Format: key = value (# = comment)
+
+# Synology Device ID — find it in Synology Syncthing UI: Actions > Show ID
+synology_device_id = XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX
+
+# Folder ID — must match the folder ID on the Synology
+folder_id   = sync-vault
+
+# Folder path on Windows — supports environment variables
+folder_path = %USERPROFILE%\Sync
+```
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `synology_device_id` | Yes* | Synology's Syncthing device ID |
+| `folder_id` | Yes* | Folder ID (must match Synology) |
+| `folder_path` | Yes* | Windows folder path (env vars supported) |
+
+*If `synology_device_id` is missing, device/folder configuration is skipped.
+Autostart is still set up, allowing manual configuration via the Syncthing GUI.
+
+### Windows Host: Autostart
+
+The bootstrap creates a Task Scheduler task named `rocket-launch-syncthing`:
+- Runs at user logon
+- Starts `syncthing.exe --no-browser` (headless, no GUI window)
+- User-scope (no admin required, `-RunLevel Limited`)
+
+To access the Syncthing web UI after autostart: `http://localhost:8384`
+
+### Windows Host: First Run
+
+On first bootstrap (Syncthing not yet installed or never run):
+
+1. Syncthing is installed via winget (`Syncthing.Syncthing`)
+2. The bootstrap starts Syncthing headless to generate `config.xml` and the API key
+3. The autostart task is created
+4. Synology device and sync folder are configured via REST API
+
+After the bootstrap completes:
+- [ ] Open `http://localhost:8384` to verify Syncthing is running
+- [ ] Accept this device on your Synology Syncthing web UI
+- [ ] The sync folder will start syncing after acceptance
 
 ## Windows Defaults (Registry Settings)
 

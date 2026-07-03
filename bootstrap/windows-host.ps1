@@ -288,4 +288,352 @@ else {
     Write-Host "    No registry changes needed." -ForegroundColor Gray
 }
 
+# --- Syncthing configuration (REST-API, autostart) ---
+# Reads syncthing.txt from config repo and configures:
+# - Autostart via Task Scheduler
+# - Synology device pairing
+# - Sync folder creation
+
+function Get-SyncthingConfig {
+    param([string]$Repo)
+    $result = @{
+        synology_device_id = $null
+        folder_id          = $null
+        folder_path        = $null
+    }
+    $tmp = Join-Path $env:TEMP ("rl-config-syncthing-" + [guid]::NewGuid())
+    git clone --depth 1 $Repo $tmp 2>$null | Out-Null
+    $file = Join-Path $tmp "syncthing.txt"
+    if (-not (Test-Path $file)) {
+        return $result
+    }
+    $lines = Get-Content $file | Where-Object { $_ -and -not $_.TrimStart().StartsWith("#") }
+    foreach ($line in $lines) {
+        if ($line -match "^\s*(\w+)\s*=\s*(.+)\s*$") {
+            $key = $Matches[1].Trim().ToLower()
+            $value = $Matches[2].Trim()
+            switch ($key) {
+                "synology_device_id" { $result.synology_device_id = $value }
+                "folder_id"          { $result.folder_id = $value }
+                "folder_path"        { $result.folder_path = $value }
+            }
+        }
+    }
+    return $result
+}
+
+function Get-SyncthingExePath {
+    # Try to find syncthing.exe via Get-Command first
+    $cmd = Get-Command syncthing.exe -ErrorAction SilentlyContinue
+    if ($cmd) {
+        return $cmd.Source
+    }
+    # Fallback: typical winget installation paths
+    $possiblePaths = @(
+        (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links\syncthing.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Syncthing\syncthing.exe"),
+        (Join-Path $env:ProgramFiles "Syncthing\syncthing.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Syncthing\syncthing.exe")
+    )
+    foreach ($path in $possiblePaths) {
+        if (Test-Path $path) {
+            return $path
+        }
+    }
+    return $null
+}
+
+function Get-SyncthingApiKey {
+    # Primary path for Syncthing on Windows
+    $configPath = Join-Path $env:LOCALAPPDATA "Syncthing\config.xml"
+    if (-not (Test-Path $configPath)) {
+        # Syncthing v2 might use a different path — check common alternatives
+        $altPath = Join-Path $env:APPDATA "Syncthing\config.xml"
+        if (Test-Path $altPath) {
+            $configPath = $altPath
+        }
+        else {
+            return $null
+        }
+    }
+    try {
+        [xml]$configXml = Get-Content $configPath
+        $apiKey = $configXml.configuration.gui.apikey
+        if ([string]::IsNullOrWhiteSpace($apiKey)) {
+            return $null
+        }
+        return $apiKey
+    }
+    catch {
+        Write-Warn "Failed to parse Syncthing config.xml: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Test-SyncthingApi {
+    param(
+        [string]$ApiKey,
+        [string]$BaseUrl = "http://127.0.0.1:8384"
+    )
+    try {
+        $headers = @{ "X-API-Key" = $ApiKey }
+        $response = Invoke-RestMethod -Uri "$BaseUrl/rest/system/ping" -Headers $headers -TimeoutSec 5 -ErrorAction Stop
+        return ($response.ping -eq "pong")
+    }
+    catch {
+        return $false
+    }
+}
+
+function Start-SyncthingHeadless {
+    param([string]$ExePath)
+    Write-Step "Starting Syncthing headless..."
+    # Start syncthing in background, no browser, no restart
+    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+    $pinfo.FileName = $ExePath
+    $pinfo.Arguments = "--no-browser --no-restart"
+    $pinfo.UseShellExecute = $false
+    $pinfo.CreateNoWindow = $true
+    $pinfo.RedirectStandardOutput = $true
+    $pinfo.RedirectStandardError = $true
+    $process = [System.Diagnostics.Process]::Start($pinfo)
+    # Give it a moment to initialize
+    Start-Sleep -Seconds 2
+    return $process
+}
+
+function Initialize-Syncthing {
+    param([string]$ExePath)
+
+    # First, check if we already have a valid API key
+    $apiKey = Get-SyncthingApiKey
+    if ($apiKey -and (Test-SyncthingApi -ApiKey $apiKey)) {
+        Write-Ok "Syncthing API is already reachable"
+        return $apiKey
+    }
+
+    # Need to start Syncthing — this may be the first run (creates config.xml)
+    if (-not $ExePath) {
+        Write-Warn "syncthing.exe not found — cannot start Syncthing"
+        return $null
+    }
+
+    $process = Start-SyncthingHeadless -ExePath $ExePath
+    if (-not $process) {
+        Write-Warn "Failed to start Syncthing process"
+        return $null
+    }
+
+    # Wait for config.xml to be created (first run) and API to become available
+    $maxRetries = 15
+    $retryDelay = 2
+    for ($i = 1; $i -le $maxRetries; $i++) {
+        $apiKey = Get-SyncthingApiKey
+        if ($apiKey -and (Test-SyncthingApi -ApiKey $apiKey)) {
+            Write-Ok "Syncthing API is now reachable (attempt $i/$maxRetries)"
+            return $apiKey
+        }
+        Write-Host "    Waiting for Syncthing API... ($i/$maxRetries)" -ForegroundColor Gray
+        Start-Sleep -Seconds $retryDelay
+    }
+
+    Write-Warn "Syncthing API did not become reachable after $($maxRetries * $retryDelay) seconds"
+    return $null
+}
+
+function Set-SyncthingAutostart {
+    param([string]$ExePath)
+    $taskName = "rocket-launch-syncthing"
+
+    # Check if task already exists
+    $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($existingTask) {
+        Write-Host "    Task '$taskName' already exists — skipping" -ForegroundColor Gray
+        return $true
+    }
+
+    Write-Step "Creating Syncthing autostart task..."
+    try {
+        $action = New-ScheduledTaskAction -Execute $ExePath -Argument "--no-browser"
+        $trigger = New-ScheduledTaskTrigger -AtLogon
+        $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+
+        Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
+        Write-Ok "Created autostart task '$taskName'"
+        return $true
+    }
+    catch {
+        Write-Warn "Failed to create autostart task: $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Get-SyncthingLocalDeviceId {
+    param(
+        [string]$ApiKey,
+        [string]$BaseUrl = "http://127.0.0.1:8384"
+    )
+    try {
+        $headers = @{ "X-API-Key" = $ApiKey }
+        $status = Invoke-RestMethod -Uri "$BaseUrl/rest/system/status" -Headers $headers -TimeoutSec 10
+        return $status.myID
+    }
+    catch {
+        Write-Warn "Failed to get local device ID: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Set-SyncthingDevice {
+    param(
+        [string]$ApiKey,
+        [string]$DeviceId,
+        [string]$DeviceName,
+        [string]$BaseUrl = "http://127.0.0.1:8384"
+    )
+    try {
+        $headers = @{
+            "X-API-Key"    = $ApiKey
+            "Content-Type" = "application/json"
+        }
+
+        # Check if device already exists
+        $devices = Invoke-RestMethod -Uri "$BaseUrl/rest/config/devices" -Headers $headers -TimeoutSec 10
+        $existingDevice = $devices | Where-Object { $_.deviceID -eq $DeviceId }
+        if ($existingDevice) {
+            Write-Host "    Device '$DeviceName' ($DeviceId) already configured — skipping" -ForegroundColor Gray
+            return $true
+        }
+
+        # Add new device. addresses=dynamic matches the Linux/macOS role (RL-15)
+        # and lets Syncthing discover the peer; other fields default sensibly.
+        $deviceConfig = @{
+            deviceID  = $DeviceId
+            name      = $DeviceName
+            addresses = @("dynamic")
+        }
+        $body = $deviceConfig | ConvertTo-Json -Depth 5
+        Invoke-RestMethod -Uri "$BaseUrl/rest/config/devices" -Method Post -Headers $headers -Body $body -TimeoutSec 10 | Out-Null
+        Write-Ok "Added device '$DeviceName'"
+        return $true
+    }
+    catch {
+        Write-Warn "Failed to add device '$DeviceName': $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Set-SyncthingFolder {
+    param(
+        [string]$ApiKey,
+        [string]$FolderId,
+        [string]$FolderPath,
+        [string]$LocalDeviceId,
+        [string]$RemoteDeviceId,
+        [string]$BaseUrl = "http://127.0.0.1:8384"
+    )
+    try {
+        $headers = @{
+            "X-API-Key"    = $ApiKey
+            "Content-Type" = "application/json"
+        }
+
+        # Check if folder already exists
+        $folders = Invoke-RestMethod -Uri "$BaseUrl/rest/config/folders" -Headers $headers -TimeoutSec 10
+        $existingFolder = $folders | Where-Object { $_.id -eq $FolderId }
+        if ($existingFolder) {
+            Write-Host "    Folder '$FolderId' already configured — skipping" -ForegroundColor Gray
+            return $true
+        }
+
+        # Expand environment variables in path (e.g., %USERPROFILE%\Sync)
+        $expandedPath = [Environment]::ExpandEnvironmentVariables($FolderPath)
+
+        # Ensure folder directory exists
+        if (-not (Test-Path $expandedPath)) {
+            New-Item -ItemType Directory -Path $expandedPath -Force | Out-Null
+            Write-Host "    Created folder directory: $expandedPath" -ForegroundColor Gray
+        }
+
+        # Build device list (local + remote)
+        $deviceList = @(
+            @{ deviceID = $LocalDeviceId }
+        )
+        if ($RemoteDeviceId) {
+            $deviceList += @{ deviceID = $RemoteDeviceId }
+        }
+
+        # Add new folder
+        $folderConfig = @{
+            id      = $FolderId
+            label   = $FolderId
+            path    = $expandedPath
+            type    = "sendreceive"
+            devices = $deviceList
+        }
+        $body = $folderConfig | ConvertTo-Json -Depth 5
+        Invoke-RestMethod -Uri "$BaseUrl/rest/config/folders" -Method Post -Headers $headers -Body $body -TimeoutSec 10 | Out-Null
+        Write-Ok "Added folder '$FolderId' at $expandedPath"
+        return $true
+    }
+    catch {
+        Write-Warn "Failed to add folder '$FolderId': $($_.Exception.Message)"
+        return $false
+    }
+}
+
+# --- Main Syncthing configuration flow ---
+Write-Step "Configuring Syncthing..."
+
+$syncthingExe = Get-SyncthingExePath
+if (-not $syncthingExe) {
+    Write-Warn "Syncthing not installed — skipping configuration. Install via winget: Syncthing.Syncthing"
+}
+else {
+    Write-Host "    Found syncthing.exe at: $syncthingExe" -ForegroundColor Gray
+
+    # Set up autostart regardless of config file presence
+    Set-SyncthingAutostart -ExePath $syncthingExe | Out-Null
+
+    # Read config from config repo
+    $stConfig = Get-SyncthingConfig -Repo $Config
+
+    # Ensure Syncthing is running and get API key
+    $apiKey = Initialize-Syncthing -ExePath $syncthingExe
+
+    if (-not $apiKey) {
+        Write-Warn "Could not obtain Syncthing API key — skipping REST configuration"
+    }
+    elseif (-not $stConfig.synology_device_id) {
+        Write-Warn "No synology_device_id in syncthing.txt — skipping device/folder configuration"
+        Write-Host "    To enable: add 'synology_device_id = <your-synology-device-id>' to syncthing.txt" -ForegroundColor Gray
+        Write-Host "    After configuration, accept this device on the Synology Syncthing web UI" -ForegroundColor Gray
+    }
+    else {
+        # Get local device ID
+        $localDeviceId = Get-SyncthingLocalDeviceId -ApiKey $apiKey
+        if (-not $localDeviceId) {
+            Write-Warn "Could not obtain local device ID — skipping REST configuration"
+        }
+        else {
+            Write-Host "    Local device ID: $($localDeviceId.Substring(0, 7))..." -ForegroundColor Gray
+
+            # Add Synology device
+            Set-SyncthingDevice -ApiKey $apiKey -DeviceId $stConfig.synology_device_id -DeviceName "Synology" | Out-Null
+
+            # Add sync folder (if configured)
+            if ($stConfig.folder_id -and $stConfig.folder_path) {
+                Set-SyncthingFolder -ApiKey $apiKey -FolderId $stConfig.folder_id -FolderPath $stConfig.folder_path -LocalDeviceId $localDeviceId -RemoteDeviceId $stConfig.synology_device_id | Out-Null
+            }
+            else {
+                Write-Warn "folder_id or folder_path not configured in syncthing.txt — skipping folder setup"
+            }
+
+            Write-Ok "Syncthing configuration complete"
+            Write-Host "    IMPORTANT: Accept this device on your Synology Syncthing web UI to complete pairing" -ForegroundColor Yellow
+        }
+    }
+}
+
 Write-Step "Windows host provisioning complete."
