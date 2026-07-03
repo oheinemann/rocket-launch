@@ -13,3 +13,10 @@ ansible/collections/
 .rocket-launch/
 .rocket-launch-config/
 bin/rocket.probe
+
+# Claude Code setup (lives in Obsidian/Sync)
+CLAUDE.md
+.claude
+docs/architecture.md
+docs/features
+CLAUDE.md.backup-*
