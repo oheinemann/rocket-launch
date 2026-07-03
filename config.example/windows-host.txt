@@ -7,5 +7,10 @@ Mozilla.Firefox
 Microsoft.VisualStudioCode
 Anthropic.Claude
 Obsidian.Obsidian
+# Browsers (Firefox is above)
+Google.Chrome
+Brave.Brave
+# API client
+Postman.Postman
 # Syncthing for ~/Sync folder sync (WSL uses the host via /mnt)
 Syncthing.Syncthing

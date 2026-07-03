@@ -35,10 +35,26 @@ The `personal` profile bundles GUI apps you want on every machine with a display
 |-----|-------|--------|-----|--------------|
 | **Claude Desktop** | cask `claude` | skipped | skipped | winget `Anthropic.Claude` |
 | **Obsidian** | cask `obsidian` | flatpak `md.obsidian.Obsidian` | skipped | winget `Obsidian.Obsidian` |
+| **Firefox** | cask `firefox` | flatpak `org.mozilla.firefox` | skipped | winget `Mozilla.Firefox` |
+| **Chrome** | cask `google-chrome` | flatpak `com.google.Chrome` | skipped | winget `Google.Chrome` |
+| **Brave** | cask `brave-browser` | flatpak `com.brave.Browser` | skipped | winget `Brave.Brave` |
+| **Postman** | cask `postman` | flatpak `com.getpostman.Postman` | skipped | winget `Postman.Postman` |
 
 **Note:** Claude Desktop has no official Linux package. It is silently skipped on
-Linux/WSL (no "unresolved" warning). On WSL machines, both apps run on the
+Linux/WSL (no "unresolved" warning). On WSL machines, GUI apps run on the
 Windows host via winget.
+
+## macOS Profile
+
+The `macos` profile includes macOS-specific system defaults (via `macos_defaults`)
+and macOS-only packages:
+
+| App | macOS | Fedora/WSL/Windows |
+|-----|-------|--------------------|
+| **iTerm2** | cask `iterm2` | not applicable |
+
+iTerm2 is a macOS-only terminal emulator. On Linux/WSL, the native terminal or
+installed terminal emulators are sufficient.
 
 ## macOS Defaults
 

@@ -53,3 +53,29 @@ obsidian:
   macos: { mgr: brew-cask, id: obsidian }
   dnf:   { mgr: flatpak,   id: md.obsidian.Obsidian }
   # On WSL, Obsidian lives on the Windows host (see config windows-host.txt).
+
+firefox:
+  macos: { mgr: brew-cask, id: firefox }
+  dnf:   { mgr: flatpak,   id: org.mozilla.firefox }
+  # On WSL, Firefox lives on the Windows host (see config windows-host.txt).
+
+chrome:
+  macos: { mgr: brew-cask, id: google-chrome }
+  dnf:   { mgr: flatpak,   id: com.google.Chrome }
+  # On WSL, Chrome lives on the Windows host (see config windows-host.txt).
+  # Note: com.google.Chrome may require the flathub-beta remote on some setups;
+  # fallback is Googles official dnf repo (future ticket if Flathub stable lacks it).
+
+brave:
+  macos: { mgr: brew-cask, id: brave-browser }
+  dnf:   { mgr: flatpak,   id: com.brave.Browser }
+  # On WSL, Brave lives on the Windows host (see config windows-host.txt).
+
+postman:
+  macos: { mgr: brew-cask, id: postman }
+  dnf:   { mgr: flatpak,   id: com.getpostman.Postman }
+  # On WSL, Postman lives on the Windows host (see config windows-host.txt).
+
+iterm2:
+  macos: { mgr: brew-cask, id: iterm2 }
+  # macOS only — no Linux equivalent (Terminal / Konsole are sufficient).
