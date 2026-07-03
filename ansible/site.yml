@@ -117,3 +117,5 @@
       vars:
         syncthing_synology_op_ref: "{{ syncthing_synology_op_ref }}"
       when: "'personal' in host_profiles"
+    - role: default-mail   # Set default mail client via duti (macOS only)
+      when: "rl_os == 'macos' and 'spark' in selected_packages"

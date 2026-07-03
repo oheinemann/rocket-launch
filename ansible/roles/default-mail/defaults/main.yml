@@ -1,0 +1,7 @@
+---
+# default-mail role defaults.
+# The role is triggered by "'spark' in selected_packages" + macOS in site.yml.
+
+# Bundle ID of the mail client to set as default for mailto: and .eml files.
+# Override to use a different mail client.
+default_mail_bundle_id: com.readdle.smartemail-Mac

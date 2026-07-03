@@ -10,6 +10,7 @@
     packages_role_managed:
       - docker  # RL-10: docker-ce role handles this on Linux/WSL
       - claude  # RL-14: Claude Desktop is macOS + Windows only (no Linux package)
+      - spark   # RL-19: Spark Mail is macOS + Windows only (no Linux package)
 
 - name: Determine package-map OS key
   ansible.builtin.set_fact:

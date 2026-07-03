@@ -14,3 +14,5 @@ Brave.Brave
 Postman.Postman
 # Syncthing for ~/Sync folder sync (WSL uses the host via /mnt)
 Syncthing.Syncthing
+# Mail client
+Readdle.Spark

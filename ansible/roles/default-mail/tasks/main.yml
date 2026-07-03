@@ -1,0 +1,54 @@
+---
+# Set the default mail client on macOS using duti.
+# Triggered by "'spark' in selected_packages" + macOS in site.yml.
+#
+# The role installs duti (a command-line utility to set default applications)
+# and configures the specified mail client as the handler for mailto: links
+# and .eml files. Idempotent: only sets the handler if it differs from current.
+#
+# Note: The mail app must have been launched at least once for duti to register
+# it. If not yet registered, the set commands will fail gracefully (ignored).
+
+# =============================================================================
+# Install duti (macOS only, no become needed for Homebrew)
+# =============================================================================
+
+- name: Install duti for setting default applications
+  community.general.homebrew:
+    name: duti
+    state: present
+  when: rl_os == 'macos'
+
+# =============================================================================
+# Read current mailto handler
+# =============================================================================
+
+- name: Read current mailto handler
+  ansible.builtin.command:
+    cmd: duti -x mailto
+  register: duti_current_mailto
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  when: rl_os == 'macos'
+
+# =============================================================================
+# Set mail client as default (only if different from current)
+# =============================================================================
+
+- name: Set mail client as mailto handler
+  block:
+    - name: Set mail client for mailto links
+      ansible.builtin.command:
+        cmd: "duti -s {{ default_mail_bundle_id }} mailto all"
+      changed_when: true
+      failed_when: false
+
+    - name: Set mail client for .eml files
+      ansible.builtin.command:
+        cmd: "duti -s {{ default_mail_bundle_id }} public.eml all"
+      changed_when: true
+      failed_when: false
+  when:
+    - rl_os == 'macos'
+    - default_mail_bundle_id not in (duti_current_mailto.stdout | default(''))

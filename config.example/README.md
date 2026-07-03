@@ -37,14 +37,41 @@ The `personal` profile bundles GUI apps you want on every machine with a display
 |-----|-------|--------|-----|--------------|
 | **Claude Desktop** | cask `claude` | skipped | skipped | winget `Anthropic.Claude` |
 | **Obsidian** | cask `obsidian` | flatpak `md.obsidian.Obsidian` | skipped | winget `Obsidian.Obsidian` |
+| **Spark Mail** | cask `readdle-spark` | skipped | skipped | winget `Readdle.Spark` |
 | **Firefox** | cask `firefox` | flatpak `org.mozilla.firefox` | skipped | winget `Mozilla.Firefox` |
 | **Chrome** | cask `google-chrome` | flatpak `com.google.Chrome` | skipped | winget `Google.Chrome` |
 | **Brave** | cask `brave-browser` | flatpak `com.brave.Browser` | skipped | winget `Brave.Brave` |
 | **Postman** | cask `postman` | flatpak `com.getpostman.Postman` | skipped | winget `Postman.Postman` |
 
-**Note:** Claude Desktop has no official Linux package. It is silently skipped on
-Linux/WSL (no "unresolved" warning). On WSL machines, GUI apps run on the
-Windows host via winget.
+**Note:** Claude Desktop and Spark Mail have no official Linux packages. They are
+silently skipped on Linux/WSL (no "unresolved" warning). On WSL machines, GUI apps
+run on the Windows host via winget.
+
+### Spark Mail — Default Mail Client
+
+On **macOS**, the `default-mail` role automatically sets Spark as the default mail
+client using `duti`. This happens when `spark` is in your profile's packages and
+the system is macOS. The role sets Spark as the handler for:
+
+- `mailto:` links
+- `.eml` files
+
+**Note:** Spark must be launched at least once before duti can register it. If
+Spark has never been opened, the duti commands will fail gracefully and you can
+re-run provisioning after opening Spark once.
+
+On **Windows**, the default mail client cannot be set programmatically due to
+Microsoft's `UserChoice` registry hash protection. After installing Spark,
+manually set it as the default:
+
+**Windows Default Mail Client Checklist:**
+
+- [ ] Open **Settings** (Win+I)
+- [ ] Navigate to **Apps > Default apps**
+- [ ] Search for "Spark" or scroll to find it
+- [ ] Click on Spark
+- [ ] Set Spark as default for **MAILTO** (mail links)
+- [ ] Optionally set Spark as default for **.eml** files
 
 ## Nerd Fonts (Cross-Platform)
 

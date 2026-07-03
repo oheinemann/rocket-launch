@@ -3,6 +3,7 @@
 packages:
   - claude
   - obsidian
+  - spark
   - firefox
   - chrome
   - brave

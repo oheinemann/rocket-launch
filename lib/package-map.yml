@@ -79,3 +79,8 @@ postman:
 iterm2:
   macos: { mgr: brew-cask, id: iterm2 }
   # macOS only — no Linux equivalent (Terminal / Konsole are sufficient).
+
+spark:
+  # Spark Mail — GUI app, macOS + Windows only. No official Linux package.
+  macos: { mgr: brew-cask, id: readdle-spark }
+  # On Windows host: winget Readdle.Spark (see config windows-host.txt).
