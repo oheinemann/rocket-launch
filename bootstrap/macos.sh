@@ -24,9 +24,22 @@ install_clt() {
   rm -f "$flag"
 }
 
+# --- sudo priming ---
+# Homebrew's NONINTERACTIVE installer needs sudo up front but cannot prompt when
+# we run via `curl | bash`. Prime the sudo credential cache here (prompting on the
+# terminal via /dev/tty) so the installer's `sudo -n` check passes.
+ensure_sudo() {
+  if sudo -n true 2>/dev/null; then return; fi   # passwordless or already cached
+  log "Administrator rights are required (Homebrew install)."
+  echo "    Enter your macOS login password:"
+  sudo -v < /dev/tty || abort \
+    "Need Administrator (sudo) access. In System Settings → Users & Groups, make '$USER' an Administrator, then re-run."
+}
+
 # --- Homebrew ---
 install_brew() {
   if command -v brew >/dev/null 2>&1; then logn "Homebrew:"; logk; return; fi
+  ensure_sudo
   log "Installing Homebrew"
   NONINTERACTIVE=1 /bin/bash -c \
     "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
