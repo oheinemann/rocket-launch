@@ -15,6 +15,7 @@ curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/insta
 | `machines.yml` | Hostname → profiles mapping (+ `defaults` fallback). |
 | `profiles/*.yml` | Reusable bundles of logical package names (e.g. `base`, `dev`, `personal`). |
 | `windows-host.txt` | winget ids for Windows host GUI apps. |
+| `windows-fonts.txt` | Nerd Font names for Windows host (optional, has defaults). |
 | `dotfiles/` | chezmoi source for your dotfiles (+ `op://` secret refs). |
 
 ## How resolution works
@@ -43,6 +44,59 @@ The `personal` profile bundles GUI apps you want on every machine with a display
 **Note:** Claude Desktop has no official Linux package. It is silently skipped on
 Linux/WSL (no "unresolved" warning). On WSL machines, GUI apps run on the
 Windows host via winget.
+
+## Nerd Fonts (Cross-Platform)
+
+The `fonts` role (macOS/Linux) and `windows-host.ps1` (Windows) install Nerd Fonts
+for terminals, editors, and the p10k prompt.
+
+### Default Font Set
+
+| Font | Use Case |
+|------|----------|
+| **JetBrainsMono Nerd Font** | Primary editor/terminal font (recommended) |
+| **FiraCode Nerd Font** | Alternative with ligatures |
+| **Meslo Nerd Font** | p10k recommended font |
+
+### Configuration After Install
+
+After fonts are installed, configure your applications:
+
+**Windows Terminal** (`settings.json` or GUI):
+```json
+{
+  "profiles": {
+    "defaults": {
+      "fontFace": "JetBrainsMono Nerd Font"
+    }
+  }
+}
+```
+
+**VSCode** (`settings.json`):
+```json
+{
+  "editor.fontFamily": "'JetBrainsMono Nerd Font', Consolas, 'Courier New', monospace",
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font"
+}
+```
+
+**iTerm2** (macOS): Profiles > Text > Font > `JetBrainsMono Nerd Font`
+
+### Customizing the Font List
+
+**Linux/macOS:** Override `fonts_list` in your profile or machine config.
+
+**Windows Host:** Create `windows-fonts.txt` in your config repo with one font
+name per line. Names must match the GitHub release zip names from
+[ryanoasis/nerd-fonts](https://github.com/ryanoasis/nerd-fonts/releases).
+
+Example `windows-fonts.txt`:
+```
+JetBrainsMono
+FiraCode
+Meslo
+```
 
 ## macOS Profile
 

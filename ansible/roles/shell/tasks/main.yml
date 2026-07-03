@@ -42,35 +42,7 @@
     version: master
   when: shell_install_p10k | bool
 
-# --- Nerd Fonts ---
-- name: Install Nerd Font (macOS via cask)
-  community.general.homebrew_cask:
-    name: "font-meslo-lg-nerd-font"
-    state: present
-  when:
-    - shell_install_nerd_fonts | bool
-    - rl_os == 'macos'
-
-- name: Ensure local font dir (Linux)
-  ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.local/share/fonts"
-    state: directory
-    mode: "0755"
-  when:
-    - shell_install_nerd_fonts | bool
-    - rl_os == 'linux'
-
-- name: Download & install Nerd Font (Linux)
-  ansible.builtin.unarchive:
-    src: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerd_font_version }}/{{ nerd_font_name }}.zip"
-    dest: "{{ ansible_env.HOME }}/.local/share/fonts"
-    remote_src: true
-    creates: "{{ ansible_env.HOME }}/.local/share/fonts/MesloLGSNerdFont-Regular.ttf"
-  when:
-    - shell_install_nerd_fonts | bool
-    - rl_os == 'linux'
-    - not ansible_check_mode   # dir is only simulated in --check; skip the download
-  notify: Refresh font cache
+# NOTE: Nerd Fonts are now installed via the dedicated 'fonts' role.
 
 # --- default shell ---
 - name: Set default shell

@@ -1,0 +1,36 @@
+---
+# Install Nerd Fonts: macOS via Homebrew casks, Linux via download.
+# Triggered when 'personal' in host_profiles (personal devices need fonts for
+# terminals, VSCode, and p10k prompt).
+
+# --- macOS: Homebrew casks ---
+- name: Install Nerd Fonts (macOS via cask)
+  community.general.homebrew_cask:
+    name: "{{ item.cask }}"
+    state: present
+  loop: "{{ fonts_list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: rl_os == 'macos'
+
+# --- Linux: Download from GitHub releases ---
+- name: Ensure local font directory (Linux)
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.local/share/fonts"
+    state: directory
+    mode: "0755"
+  when: rl_os == 'linux'
+
+- name: Download and install Nerd Fonts (Linux)
+  ansible.builtin.unarchive:
+    src: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerd_fonts_version }}/{{ item.name }}.zip"
+    dest: "{{ ansible_env.HOME }}/.local/share/fonts"
+    remote_src: true
+    creates: "{{ ansible_env.HOME }}/.local/share/fonts/{{ item.marker }}"
+  loop: "{{ fonts_list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - rl_os == 'linux'
+    - not ansible_check_mode   # dir is only simulated in --check; skip download
+  notify: Refresh font cache

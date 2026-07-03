@@ -3,9 +3,7 @@
 shell_default: zsh                 # login shell to set
 shell_install_omz: true            # oh-my-zsh framework
 shell_install_p10k: true           # powerlevel10k prompt
-shell_install_nerd_fonts: true     # MesloLGS NF (p10k recommended font)
 shell_set_default: true            # chsh to shell_default
 
-# Nerd Font to install on Linux (downloaded from ryanoasis/nerd-fonts).
-nerd_font_name: Meslo
-nerd_font_version: v3.2.1
+# NOTE: Nerd Fonts are now installed via the dedicated 'fonts' role.
+# The shell role no longer handles font installation.

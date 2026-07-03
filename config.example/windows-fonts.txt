@@ -1,0 +1,11 @@
+# Nerd Fonts for Windows host (one per line). '#' = comment.
+# These are installed to user-scope fonts (no admin required).
+# Font names must match the GitHub release zip names from:
+# https://github.com/ryanoasis/nerd-fonts/releases
+#
+# After installation, configure Windows Terminal / VSCode:
+#   "fontFace": "JetBrainsMono Nerd Font"
+#   or: "editor.fontFamily": "'JetBrainsMono Nerd Font', Consolas, 'Courier New', monospace"
+JetBrainsMono
+FiraCode
+Meslo

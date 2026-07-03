@@ -98,7 +98,9 @@
 
   roles:
     - role: packages       # install resolved apps via the right OS manager
-    - role: shell          # zsh + oh-my-zsh + p10k + Nerd Fonts
+    - role: fonts          # Nerd Fonts for terminals, editors, p10k
+      when: "'personal' in host_profiles"
+    - role: shell          # zsh + oh-my-zsh + p10k (fonts via fonts role)
     - role: onepassword    # 1Password CLI (op) — needed by chezmoi for op://
     - role: chezmoi        # dotfiles + secrets via chezmoi
     - role: macos-defaults # macOS system defaults (Dock, Finder, keyboard, etc.)

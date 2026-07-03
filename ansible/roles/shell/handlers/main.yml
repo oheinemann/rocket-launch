@@ -1,5 +1,3 @@
 ---
-- name: Refresh font cache
-  ansible.builtin.command: fc-cache -f
-  changed_when: false
-  failed_when: false
+# NOTE: Font cache handler moved to 'fonts' role.
+# This file is kept for role structure but contains no handlers.

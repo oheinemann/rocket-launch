@@ -1,0 +1,18 @@
+---
+# fonts role defaults — Nerd Fonts for terminals, editors, and p10k.
+#
+# Default set: JetBrainsMono + FiraCode + Meslo (all Nerd Font variants).
+# Each entry maps logical name -> macOS cask + Linux marker file.
+
+nerd_fonts_version: v3.4.0
+
+fonts_list:
+  - name: JetBrainsMono
+    cask: font-jetbrains-mono-nerd-font
+    marker: JetBrainsMonoNerdFont-Regular.ttf
+  - name: FiraCode
+    cask: font-fira-code-nerd-font
+    marker: FiraCodeNerdFont-Regular.ttf
+  - name: Meslo
+    cask: font-meslo-lg-nerd-font
+    marker: MesloLGSNerdFont-Regular.ttf
