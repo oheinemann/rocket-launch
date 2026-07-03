@@ -2,6 +2,7 @@
 # personal — personal apps wanted on (almost) every machine.
 packages:
   - claude
+  - teams
   - obsidian
   - spark
   - firefox
