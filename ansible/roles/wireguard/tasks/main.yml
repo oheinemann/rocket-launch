@@ -1,11 +1,85 @@
 ---
-# WireGuard (optional, Phase C+). Stub.
-# Plan: install wireguard-tools per OS, then materialize the tunnel config from
-# a 1Password reference at apply time, e.g.:
-#   op read "op://Private/WireGuard Home/document" > ~/.config/wireguard/home.conf
-# Keep the actual config out of any repo — only the op:// reference lives in
-# the config repo (secrets.yml).
+# Install WireGuard tools and optionally materialize tunnel config from 1Password.
+# Triggered by "'laptop' in host_profiles" — mobile devices that need VPN access.
+# Fixed desktops (workstation profile) do not get WireGuard.
+#
+# Usage: Manual connection via `sudo wg-quick up ~/.config/wireguard/wg0.conf`
+# No autostart — connect only when needed (outside home network).
 
-- name: WireGuard role placeholder
+# =============================================================================
+# Install wireguard-tools
+# =============================================================================
+
+- name: Install wireguard-tools
+  block:
+    # --- macOS ---
+    - name: Install wireguard-tools (macOS)
+      community.general.homebrew:
+        name: wireguard-tools
+        state: present
+      when: rl_os == 'macos'
+
+    # --- Fedora ---
+    - name: Install wireguard-tools (Fedora)
+      ansible.builtin.dnf:
+        name: wireguard-tools
+        state: present
+      become: true
+      when: rl_context == 'fedora'
+
+    # --- Debian/Ubuntu (native Linux, not WSL) ---
+    - name: Install wireguard-tools (apt)
+      ansible.builtin.apt:
+        name: wireguard-tools
+        state: present
+      become: true
+      when: rl_context == 'linux'
+
+    # --- WSL ---
+    # NOTE: WireGuard on WSL is skipped. For Windows laptops, use the WireGuard
+    # GUI on the Windows host (install via winget, see windows-host.txt).
+
+# =============================================================================
+# Materialize config from 1Password (only if wireguard_op_ref is set)
+# =============================================================================
+
+- name: Materialize WireGuard config from 1Password
+  when: wireguard_op_ref | length > 0
+  block:
+    - name: Ensure WireGuard config directory exists
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.config/wireguard"
+        state: directory
+        mode: "0700"
+
+    - name: Read WireGuard config from 1Password
+      ansible.builtin.command:
+        cmd: op read "{{ wireguard_op_ref }}"
+      register: wg_config
+      check_mode: false
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Write WireGuard config file
+      ansible.builtin.copy:
+        content: "{{ wg_config.stdout }}"
+        dest: "{{ ansible_env.HOME }}/.config/wireguard/{{ wireguard_iface }}.conf"
+        mode: "0600"
+      no_log: true
+      when:
+        - wg_config.rc == 0
+        - wg_config.stdout | length > 0
+        - not ansible_check_mode
+
+    - name: Note if op read failed (e.g., not logged in)
+      ansible.builtin.debug:
+        msg: >-
+          Could not read WireGuard config from 1Password (op read returned rc={{ wg_config.rc }}).
+          Ensure 1Password CLI is authenticated (op signin) and the reference is valid.
+      when: wg_config.rc != 0
+
+- name: Note if no wireguard_op_ref set
   ansible.builtin.debug:
-    msg: "wireguard role: not implemented yet (planned: wireguard-tools + op-sourced config)."
+    msg: "No wireguard_op_ref set for this host — installed tools only, skipping config."
+  when: wireguard_op_ref | length == 0

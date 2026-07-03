@@ -1,0 +1,10 @@
+---
+# WireGuard role defaults.
+# The role is triggered by "'laptop' in host_profiles" in site.yml.
+
+# Interface name for the WireGuard tunnel (used for config file name).
+wireguard_iface: wg0
+
+# 1Password reference to the tunnel config (op:// format).
+# Per-host value in machines.yml; empty = skip config step (tools only).
+wireguard_op_ref: ""

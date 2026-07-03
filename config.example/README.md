@@ -89,6 +89,66 @@ Once enabled:
 - `ssh -T git@github.com` works via the 1Password SSH agent
 - chezmoi `op://` references resolve seamlessly
 
+## WireGuard VPN (Laptop Profile)
+
+WireGuard is installed on devices with the `laptop` profile — mobile devices that
+need VPN access to the home network. Fixed desktops (`workstation` profile) do not
+get WireGuard.
+
+### Config via 1Password
+
+Each laptop has its own WireGuard tunnel config (unique keys — create one per
+device in the FritzBox). Store each config as a **field** (or secure note) in
+1Password, in an item **named after the hostname**. The reference is then
+**derived automatically** — no `machines.yml` entry needed:
+
+```
+op://Private/<hostname>/config      # e.g. op://Private/olli-macbook/config
+```
+
+Add an explicit `wireguard_op_ref` in `machines.yml` **only to override** (a
+different vault or item name):
+
+```yaml
+olli-mobile:
+  os: macos
+  profiles: [base, laptop, macos]
+  wireguard_op_ref: "op://Work/WireGuard-Mobile/config"   # override
+```
+
+At provision time, the `wireguard` role:
+1. Installs `wireguard-tools` via the system package manager
+2. Reads the config from 1Password (`op read` on the derived/overridden ref)
+3. Writes it to `~/.config/wireguard/wg0.conf` (mode 0600)
+
+> Tip: in the FritzBox, choose **split tunnel** (only the home network in
+> `AllowedIPs`) if you want the tunnel to reach the home LAN without routing all
+> your traffic through it.
+
+**Prerequisite:** 1Password CLI must be authenticated (`op signin`). On macOS with
+the 1Password desktop app, the CLI integration provides automatic authentication.
+
+### Manual Connection
+
+No autostart is configured. Connect when needed (outside home network):
+
+```bash
+# Connect
+sudo wg-quick up ~/.config/wireguard/wg0.conf
+
+# Disconnect
+sudo wg-quick down ~/.config/wireguard/wg0.conf
+
+# Status
+sudo wg show
+```
+
+### WSL / Windows Laptops
+
+For Windows laptops running WSL, WireGuard is **not** installed inside WSL. Instead,
+use the WireGuard GUI on the Windows host (install via winget: `WireGuard.WireGuard`
+in `windows-host.txt`). The Windows tunnel covers all traffic including WSL.
+
 ## Docker "Wohin" Doctrine
 
 | Context | Docker Source | Notes |
