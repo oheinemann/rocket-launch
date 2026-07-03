@@ -92,9 +92,14 @@
       when: rl_context in ['linux', 'wsl']
 
     - name: Add Docker apt repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
-        filename: docker
+      ansible.builtin.deb822_repository:
+        name: docker
+        types: [deb]
+        uris: ["https://download.docker.com/linux/{{ ansible_distribution | lower }}"]
+        suites: ["{{ ansible_distribution_release }}"]
+        components: [stable]
+        architectures: ["{{ docker_apt_arch }}"]
+        signed_by: /etc/apt/keyrings/docker.asc
         state: present
       become: true
       when: rl_context in ['linux', 'wsl']

@@ -61,9 +61,13 @@
       when: rl_context in ['wsl', 'linux']
 
     - name: Add DDEV apt repository
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/ddev.asc] https://pkg.ddev.com/apt/ * *"
-        filename: ddev
+      ansible.builtin.deb822_repository:
+        name: ddev
+        types: [deb]
+        uris: ["https://pkg.ddev.com/apt/"]
+        suites: ["*"]
+        components: ["*"]
+        signed_by: /etc/apt/keyrings/ddev.asc
         state: present
       become: true
       when: rl_context in ['wsl', 'linux']

@@ -55,9 +55,13 @@
       when: rl_context == 'linux'
 
     - name: Add Syncthing apt repository
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable-v2"
-        filename: syncthing
+      ansible.builtin.deb822_repository:
+        name: syncthing
+        types: [deb]
+        uris: ["https://apt.syncthing.net/"]
+        suites: [syncthing]
+        components: [stable-v2]
+        signed_by: /etc/apt/keyrings/syncthing-archive-keyring.gpg
         state: present
       become: true
       when: rl_context == 'linux'

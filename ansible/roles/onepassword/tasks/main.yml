@@ -29,9 +29,14 @@
       when: rl_context in ['wsl', 'linux']
 
     - name: Add 1Password apt repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch={{ op_apt_arch }} signed-by=/usr/share/keyrings/1password-archive-keyring.asc] https://downloads.1password.com/linux/debian/{{ op_apt_arch }} stable main"
-        filename: 1password
+      ansible.builtin.deb822_repository:
+        name: 1password
+        types: [deb]
+        uris: ["https://downloads.1password.com/linux/debian/{{ op_apt_arch }}"]
+        suites: [stable]
+        components: [main]
+        architectures: ["{{ op_apt_arch }}"]
+        signed_by: /usr/share/keyrings/1password-archive-keyring.asc
         state: present
       become: true
       when: rl_context in ['wsl', 'linux']
