@@ -51,8 +51,19 @@ if [ -f "$SCRIPT_DIR/lib/detect-os.sh" ]; then
 else
   RL_SRC="$(mktemp -d)"
   echo "==> Fetching rocket-launch engine ..."
-  git clone --depth 1 "$RL_REPO_URL" "$RL_SRC" >/dev/null 2>&1 \
-    || { echo "!!! git clone failed (is git installed?)" >&2; exit 1; }
+  # A fresh machine has no git yet — the bootstrap (below) installs it. So fetch
+  # the engine as a tarball via curl; fall back to git only if curl is missing.
+  RL_REPO_BRANCH="${RL_REPO_BRANCH:-main}"
+  RL_TARBALL="${RL_REPO_URL%.git}/archive/refs/heads/${RL_REPO_BRANCH}.tar.gz"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$RL_TARBALL" | tar -xz -C "$RL_SRC" --strip-components=1 \
+      || { echo "!!! failed to fetch engine tarball ($RL_TARBALL)" >&2; exit 1; }
+  elif command -v git >/dev/null 2>&1; then
+    git clone --depth 1 "$RL_REPO_URL" "$RL_SRC" >/dev/null 2>&1 \
+      || { echo "!!! git clone failed" >&2; exit 1; }
+  else
+    echo "!!! need curl or git to fetch the engine" >&2; exit 1
+  fi
 fi
 
 # shellcheck disable=SC1091
