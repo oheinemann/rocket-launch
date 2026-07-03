@@ -7,3 +7,5 @@ Mozilla.Firefox
 Microsoft.VisualStudioCode
 Anthropic.Claude
 Obsidian.Obsidian
+# Syncthing for ~/Sync folder sync (WSL uses the host via /mnt)
+Syncthing.Syncthing

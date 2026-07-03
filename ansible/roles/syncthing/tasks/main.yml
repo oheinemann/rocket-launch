@@ -1,0 +1,350 @@
+---
+# Install Syncthing and configure sync with Synology via REST API.
+# Triggered by "'personal' in host_profiles" — personal devices that sync ~/Sync.
+#
+# WSL is intentionally skipped: Syncthing runs on the Windows host (via winget,
+# see windows-host.txt). WSL accesses the synced folder via /mnt/... if needed.
+
+# =============================================================================
+# Skip on WSL (runs on Windows host)
+# =============================================================================
+
+- name: Note WSL skip
+  ansible.builtin.debug:
+    msg: "Syncthing skipped on WSL — runs on Windows host (winget). Access via /mnt/... if needed."
+  when: rl_context == 'wsl'
+
+# =============================================================================
+# Installation (macOS / Fedora / native Linux)
+# =============================================================================
+
+- name: Install and configure Syncthing
+  when: rl_context != 'wsl'
+  block:
+
+    # --- macOS (no become) ---
+    - name: Install Syncthing (macOS)
+      community.general.homebrew:
+        name: syncthing
+        state: present
+      when: rl_os == 'macos'
+
+    # --- Fedora (become) ---
+    - name: Install Syncthing (Fedora)
+      ansible.builtin.dnf:
+        name: syncthing
+        state: present
+      become: true
+      when: rl_context == 'fedora'
+
+    # --- Debian/Ubuntu (apt with official repo, become) ---
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+      become: true
+      when: rl_context == 'linux'
+
+    - name: Add Syncthing signing key (apt)
+      ansible.builtin.get_url:
+        url: https://syncthing.net/release-key.gpg
+        dest: /etc/apt/keyrings/syncthing-archive-keyring.gpg
+        mode: "0644"
+      become: true
+      when: rl_context == 'linux'
+
+    - name: Add Syncthing apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable-v2"
+        filename: syncthing
+        state: present
+      become: true
+      when: rl_context == 'linux'
+
+    - name: Install Syncthing (apt)
+      ansible.builtin.apt:
+        name: syncthing
+        state: present
+        update_cache: true
+      become: true
+      when: rl_context == 'linux'
+
+    # =========================================================================
+    # Service Management (Linux: systemd --user; macOS: brew services)
+    # =========================================================================
+
+    # --- macOS: brew services (no become) ---
+    - name: Check if Syncthing service is running (macOS)
+      ansible.builtin.command:
+        cmd: brew services list
+      register: syncthing_brew_services
+      check_mode: false
+      changed_when: false
+      when: rl_os == 'macos'
+
+    - name: Start Syncthing service (macOS)
+      ansible.builtin.command:
+        cmd: brew services start syncthing
+      register: syncthing_brew_start
+      changed_when: "'Successfully started' in syncthing_brew_start.stdout or 'started' in syncthing_brew_start.stderr"
+      when:
+        - rl_os == 'macos'
+        - "'syncthing started' not in syncthing_brew_services.stdout"
+
+    # --- Linux (Fedora + native Linux): systemd --user + loginctl enable-linger ---
+
+    # Enable linger so user services start at boot (requires become)
+    - name: Check if loginctl linger is enabled
+      ansible.builtin.command:
+        cmd: "loginctl show-user {{ ansible_user_id }} --property=Linger"
+      register: syncthing_linger_check
+      check_mode: false
+      changed_when: false
+      failed_when: false
+      when: rl_context in ['fedora', 'linux']
+
+    - name: Enable loginctl linger for user
+      ansible.builtin.command:
+        cmd: "loginctl enable-linger {{ ansible_user_id }}"
+      become: true
+      register: syncthing_linger_enable
+      changed_when: syncthing_linger_check.stdout is not defined or 'Linger=yes' not in syncthing_linger_check.stdout
+      when:
+        - rl_context in ['fedora', 'linux']
+        - syncthing_linger_check.stdout is not defined or 'Linger=yes' not in syncthing_linger_check.stdout
+
+    # Enable and start the user service (no become, scope: user)
+    # NOTE: In --check mode or when systemd user instance is not running (e.g., SSH
+    # without lingering enabled yet), this may fail. We tolerate failures in check
+    # mode and when the user systemd is not available.
+    - name: Enable and start Syncthing user service (Linux)
+      ansible.builtin.systemd_service:
+        name: syncthing.service
+        scope: user
+        enabled: true
+        state: started
+      register: syncthing_service_result
+      failed_when:
+        - syncthing_service_result is failed
+        - not ansible_check_mode
+        - ansible_service_mgr == 'systemd'
+      when: rl_context in ['fedora', 'linux']
+
+    # =========================================================================
+    # REST API Configuration (device + folder)
+    # Only runs when not in check mode and API is reachable.
+    # =========================================================================
+
+    - name: Configure Syncthing via REST API
+      when: not ansible_check_mode
+      block:
+
+        # --- Determine config.xml path (v2: ~/.local/state, v1: ~/.config) ---
+        - name: Check for Syncthing config.xml (XDG state dir)
+          ansible.builtin.stat:
+            path: "{{ ansible_env.HOME }}/.local/state/syncthing/config.xml"
+          register: syncthing_config_state
+
+        - name: Check for Syncthing config.xml (legacy config dir)
+          ansible.builtin.stat:
+            path: "{{ ansible_env.HOME }}/.config/syncthing/config.xml"
+          register: syncthing_config_legacy
+
+        - name: Set Syncthing config path
+          ansible.builtin.set_fact:
+            syncthing_config_path: >-
+              {{ syncthing_config_state.stat.path
+                 if syncthing_config_state.stat.exists | default(false)
+                 else (syncthing_config_legacy.stat.path
+                       if syncthing_config_legacy.stat.exists | default(false)
+                       else '') }}
+
+        - name: REST API configuration
+          when: syncthing_config_path | length > 0
+          block:
+
+            # --- Read API key from config.xml ---
+            - name: Read Syncthing config.xml
+              ansible.builtin.slurp:
+                src: "{{ syncthing_config_path }}"
+              register: syncthing_config_raw
+              no_log: true
+              check_mode: false
+
+            - name: Extract API key from config
+              ansible.builtin.set_fact:
+                syncthing_api_key: "{{ syncthing_config_raw.content | b64decode | regex_search('<apikey>([^<]+)</apikey>', '\\1') | first }}"
+              no_log: true
+
+            # --- Wait for API to be ready ---
+            - name: Wait for Syncthing API to be ready
+              ansible.builtin.uri:
+                url: "{{ syncthing_api_url }}/rest/system/ping"
+                headers:
+                  X-API-Key: "{{ syncthing_api_key }}"
+                method: GET
+                status_code: [200]
+              register: syncthing_api_ping
+              until: syncthing_api_ping.status == 200
+              retries: 10
+              delay: 2
+              failed_when: false
+              no_log: true
+
+            - name: Configure devices and folders
+              when: syncthing_api_ping.status | default(0) == 200
+              block:
+
+                # --- Get local device ID ---
+                - name: Get local Syncthing device ID
+                  ansible.builtin.uri:
+                    url: "{{ syncthing_api_url }}/rest/system/status"
+                    headers:
+                      X-API-Key: "{{ syncthing_api_key }}"
+                    method: GET
+                    return_content: true
+                  register: syncthing_status
+                  no_log: true
+
+                - name: Extract local device ID
+                  ansible.builtin.set_fact:
+                    syncthing_local_device_id: "{{ (syncthing_status.content | from_json).myID }}"
+                  no_log: true
+
+                # --- Read Synology device ID from 1Password ---
+                - name: Read Synology device ID from 1Password
+                  ansible.builtin.command:
+                    cmd: op read "{{ syncthing_synology_op_ref }}"
+                  register: syncthing_synology_device_id_raw
+                  check_mode: false
+                  changed_when: false
+                  failed_when: false
+                  no_log: true
+
+                - name: Configure Synology device and shared folder
+                  when:
+                    - syncthing_synology_device_id_raw.rc == 0
+                    - syncthing_synology_device_id_raw.stdout | length > 0
+                  block:
+
+                    - name: Set Synology device ID fact
+                      ansible.builtin.set_fact:
+                        syncthing_synology_device_id: "{{ syncthing_synology_device_id_raw.stdout | trim }}"
+                      no_log: true
+
+                    # --- Get current devices ---
+                    - name: Get current Syncthing devices
+                      ansible.builtin.uri:
+                        url: "{{ syncthing_api_url }}/rest/config/devices"
+                        headers:
+                          X-API-Key: "{{ syncthing_api_key }}"
+                        method: GET
+                        return_content: true
+                      register: syncthing_devices
+                      no_log: true
+
+                    - name: Check if Synology device exists
+                      ansible.builtin.set_fact:
+                        syncthing_synology_exists: >-
+                          {{ (syncthing_devices.content | from_json)
+                             | selectattr('deviceID', 'equalto', syncthing_synology_device_id)
+                             | list | length > 0 }}
+                      no_log: true
+
+                    # --- Add Synology device if not present ---
+                    - name: Add Synology device
+                      ansible.builtin.uri:
+                        url: "{{ syncthing_api_url }}/rest/config/devices"
+                        headers:
+                          X-API-Key: "{{ syncthing_api_key }}"
+                        method: POST
+                        body_format: json
+                        body:
+                          deviceID: "{{ syncthing_synology_device_id }}"
+                          name: Synology
+                          addresses:
+                            - dynamic
+                          autoAcceptFolders: false
+                          introducer: false
+                        status_code: [200, 201]
+                      register: syncthing_add_device
+                      changed_when: true
+                      no_log: true
+                      when: not syncthing_synology_exists
+
+                    # --- Get current folders ---
+                    - name: Get current Syncthing folders
+                      ansible.builtin.uri:
+                        url: "{{ syncthing_api_url }}/rest/config/folders"
+                        headers:
+                          X-API-Key: "{{ syncthing_api_key }}"
+                        method: GET
+                        return_content: true
+                      register: syncthing_folders
+                      no_log: true
+
+                    - name: Check if sync folder exists
+                      ansible.builtin.set_fact:
+                        syncthing_folder_exists: >-
+                          {{ (syncthing_folders.content | from_json)
+                             | selectattr('id', 'equalto', syncthing_folder_id)
+                             | list | length > 0 }}
+                      no_log: true
+
+                    # --- Create shared folder if not present ---
+                    - name: Ensure sync folder directory exists
+                      ansible.builtin.file:
+                        path: "{{ syncthing_folder_path }}"
+                        state: directory
+                        mode: "0700"
+                      when: not syncthing_folder_exists
+
+                    - name: Create shared folder
+                      ansible.builtin.uri:
+                        url: "{{ syncthing_api_url }}/rest/config/folders"
+                        headers:
+                          X-API-Key: "{{ syncthing_api_key }}"
+                        method: POST
+                        body_format: json
+                        body:
+                          id: "{{ syncthing_folder_id }}"
+                          label: "{{ syncthing_folder_id }}"
+                          path: "{{ syncthing_folder_path }}"
+                          type: sendreceive
+                          devices:
+                            - deviceID: "{{ syncthing_local_device_id }}"
+                            - deviceID: "{{ syncthing_synology_device_id }}"
+                          rescanIntervalS: 3600
+                          fsWatcherEnabled: true
+                        status_code: [200, 201]
+                      register: syncthing_add_folder
+                      changed_when: true
+                      no_log: true
+                      when: not syncthing_folder_exists
+
+                - name: Note if op read failed
+                  ansible.builtin.debug:
+                    msg: >-
+                      Could not read Synology device ID from 1Password (op read returned rc={{ syncthing_synology_device_id_raw.rc }}).
+                      Ensure 1Password CLI is authenticated (op signin) and the reference is valid.
+                  when: syncthing_synology_device_id_raw.rc != 0
+
+            - name: Note API not reachable
+              ansible.builtin.debug:
+                msg: >-
+                  Syncthing API not reachable at {{ syncthing_api_url }}.
+                  REST configuration skipped. Start Syncthing and re-run to configure.
+              when: syncthing_api_ping.status | default(0) != 200
+
+        - name: Note config.xml not found
+          ansible.builtin.debug:
+            msg: >-
+              Syncthing config.xml not found. Syncthing may not have started yet.
+              REST configuration skipped. Start Syncthing once and re-run to configure.
+          when: syncthing_config_path | length == 0
+
+    - name: Note check-mode skip
+      ansible.builtin.debug:
+        msg: "REST API configuration skipped in check mode (no running Syncthing daemon)."
+      when: ansible_check_mode

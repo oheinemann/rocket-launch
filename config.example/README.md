@@ -238,6 +238,68 @@ by DDEV/mkcert version — consult the current DDEV documentation:
 
 Once configured, DDEV sites will show trusted HTTPS in Chrome/Edge/Firefox on Windows.
 
+## Syncthing (Personal Profile)
+
+Syncthing is installed on devices with the `personal` profile and syncs the
+`~/Sync` folder with the Synology NAS.
+
+### Installation per OS
+
+| Context | Install | Service |
+|---------|---------|---------|
+| macOS | `brew install syncthing` | `brew services` (launchd, user) |
+| Fedora | `dnf install syncthing` | `systemd --user` + `loginctl enable-linger` |
+| Debian/Ubuntu | apt (syncthing.net repo) | `systemd --user` + `loginctl enable-linger` |
+| **WSL** | skipped | runs on Windows host |
+| Windows-Host | winget `Syncthing.Syncthing` | Tray app |
+
+### REST API Configuration
+
+After the service starts, the role configures Syncthing via its REST API:
+
+1. Adds the Synology as a remote device (Device ID from 1Password)
+2. Creates the `~/Sync` folder shared with the Synology
+
+The Synology Device ID is read from 1Password at runtime:
+
+```
+syncthing_synology_op_ref: "op://Private/Syncthing-Synology/device-id"
+```
+
+Override per host in `machines.yml` if needed.
+
+### loginctl enable-linger (Linux)
+
+On Linux, the role enables `loginctl enable-linger` for the current user. This
+ensures the Syncthing user service starts at boot, even without an active login
+session.
+
+### Manual Step: Synology Accept
+
+Syncthing pairing is **two-sided**: each new device must be accepted by the
+Synology. The engine can only configure the local side. On the Synology:
+
+- **Option A (recommended):** Enable "Auto Accept" for the sync folder in the
+  Synology Syncthing settings. New devices are accepted automatically.
+- **Option B:** Manually confirm each new device in the Synology Syncthing web UI
+  when it appears as "pending".
+
+After acceptance, the folder will start syncing.
+
+### WSL / Windows
+
+For WSL machines, Syncthing is **not** installed inside WSL. Instead, Syncthing
+runs on the Windows host (via winget: `Syncthing.Syncthing` in `windows-host.txt`).
+
+If WSL needs access to the synced folder, create a symlink via chezmoi:
+
+```bash
+# Example: link ~/Sync to the Windows sync folder
+ln -s /mnt/c/Users/<username>/Sync ~/Sync
+```
+
+The exact path depends on your Windows Syncthing configuration.
+
 ## Dotfiles (chezmoi)
 
 `dotfiles/` is a chezmoi source dir. File names use chezmoi conventions:

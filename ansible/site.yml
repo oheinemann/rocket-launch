@@ -77,6 +77,14 @@
           {{ machines[rl_hostname].wireguard_op_ref
              | default('op://Private/' ~ rl_hostname ~ '/config') }}
 
+    # Syncthing Synology device ID reference. Default is the standard private vault
+    # item; per-host override in machines.yml possible.
+    - name: Resolve syncthing_synology_op_ref for this host
+      ansible.builtin.set_fact:
+        syncthing_synology_op_ref: >-
+          {{ machines[rl_hostname].syncthing_synology_op_ref
+             | default('op://Private/Syncthing-Synology/device-id') }}
+
     - name: Show resolution summary
       ansible.builtin.debug:
         msg:
@@ -86,6 +94,7 @@
           - "packages   : {{ selected_packages }}"
           - "macos_defaults: {{ selected_macos_defaults | length }} entries"
           - "wireguard_op_ref: {{ wireguard_op_ref | default('(none)') }}"
+          - "syncthing_synology_op_ref: {{ syncthing_synology_op_ref | default('(none)') }}"
 
   roles:
     - role: packages       # install resolved apps via the right OS manager
@@ -102,3 +111,7 @@
       when: "'laptop' in host_profiles"
     - role: ddev           # DDEV local dev environment (requires Docker)
       when: "'dev' in host_profiles and (ddev_install | default(true) | bool)"
+    - role: syncthing      # Syncthing for ~/Sync <-> Synology sync
+      vars:
+        syncthing_synology_op_ref: "{{ syncthing_synology_op_ref }}"
+      when: "'personal' in host_profiles"
