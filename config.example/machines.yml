@@ -2,31 +2,34 @@
 # machines.yml — maps each host to a set of reusable profiles.
 # Key = hostname (see `hostname`). Unknown hosts fall back to `defaults`.
 #
+# The keys below are generic examples — replace them with your real hostnames
+# (run `hostname` on each machine and use that exact value).
+#
 # WireGuard (laptop profile): the tunnel config is read from 1Password. By
 # convention the item is named after the hostname, so the reference defaults to
 # op://Private/<hostname>/config — no entry needed here. Add an explicit
 # `wireguard_op_ref` only to override (different vault or item name).
 
 machines:
-  olli-thinkpad:
+  example-windows:
     os: windows
     profiles: [base, dev, workstation, personal]
     targets: [windows-host, wsl]      # provisioned on both host and WSL
 
-  olli-macbook:
+  example-macbook:
     os: macos
     profiles: [base, dev, laptop, macos, personal]
-    # WireGuard ref auto-derived: op://Private/olli-macbook/config
+    # WireGuard ref auto-derived: op://Private/example-macbook/config
 
-  olli-fedora-srv:
+  example-server:
     os: fedora
     profiles: [base, server]
     # No personal profile — headless server, no GUI apps.
 
-  olli-mobile:
+  example-laptop:
     os: macos
     profiles: [base, laptop, macos, personal]   # intentionally lean — no server/heavy dev
-    wireguard_op_ref: "op://Work/WireGuard-Mobile/config"   # example override (custom vault/item)
+    wireguard_op_ref: "op://Work/WireGuard-Laptop/config"   # example override (custom vault/item)
 
 defaults:
   profiles: [base]

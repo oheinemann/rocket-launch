@@ -187,17 +187,17 @@ device in the FritzBox). Store each config as a **field** (or secure note) in
 **derived automatically** — no `machines.yml` entry needed:
 
 ```
-op://Private/<hostname>/config      # e.g. op://Private/olli-macbook/config
+op://Private/<hostname>/config      # e.g. op://Private/example-macbook/config
 ```
 
 Add an explicit `wireguard_op_ref` in `machines.yml` **only to override** (a
 different vault or item name):
 
 ```yaml
-olli-mobile:
+example-laptop:
   os: macos
   profiles: [base, laptop, macos]
-  wireguard_op_ref: "op://Work/WireGuard-Mobile/config"   # override
+  wireguard_op_ref: "op://Work/WireGuard-Laptop/config"   # override
 ```
 
 At provision time, the `wireguard` role:
