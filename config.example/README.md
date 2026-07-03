@@ -13,7 +13,7 @@ curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/insta
 | Path | Purpose |
 |------|---------|
 | `machines.yml` | Hostname → profiles mapping (+ `defaults` fallback). |
-| `profiles/*.yml` | Reusable bundles of logical package names. |
+| `profiles/*.yml` | Reusable bundles of logical package names (e.g. `base`, `dev`, `personal`). |
 | `windows-host.txt` | winget ids for Windows host GUI apps. |
 | `dotfiles/` | chezmoi source for your dotfiles (+ `op://` secret refs). |
 
@@ -26,6 +26,19 @@ curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/insta
 
 Add a new machine = one entry in `machines.yml`. Add a new app = add it to a
 profile and ensure it exists in the engine `package-map.yml`.
+
+## Personal Profile
+
+The `personal` profile bundles GUI apps you want on every machine with a display:
+
+| App | macOS | Fedora | WSL | Windows-Host |
+|-----|-------|--------|-----|--------------|
+| **Claude Desktop** | cask `claude` | skipped | skipped | winget `Anthropic.Claude` |
+| **Obsidian** | cask `obsidian` | flatpak `md.obsidian.Obsidian` | skipped | winget `Obsidian.Obsidian` |
+
+**Note:** Claude Desktop has no official Linux package. It is silently skipped on
+Linux/WSL (no "unresolved" warning). On WSL machines, both apps run on the
+Windows host via winget.
 
 ## macOS Defaults
 

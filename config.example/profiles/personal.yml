@@ -1,0 +1,5 @@
+---
+# personal — personal apps wanted on (almost) every machine.
+packages:
+  - claude
+  - obsidian

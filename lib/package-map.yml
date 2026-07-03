@@ -43,3 +43,13 @@ slack:
   macos: { mgr: brew-cask, id: slack }
   dnf:   { mgr: flatpak,   id: com.slack.Slack }
   # On WSL, Slack lives on the Windows host (see config windows-host.txt).
+
+claude:
+  # Claude Desktop — GUI app, macOS + Windows only. No official Linux package.
+  macos: { mgr: brew-cask, id: claude }
+  # On Windows host: winget Anthropic.Claude (see config windows-host.txt).
+
+obsidian:
+  macos: { mgr: brew-cask, id: obsidian }
+  dnf:   { mgr: flatpak,   id: md.obsidian.Obsidian }
+  # On WSL, Obsidian lives on the Windows host (see config windows-host.txt).

@@ -2,13 +2,14 @@
 # Resolve logical packages via the package map and install them with the
 # manager that matches the current OS/context.
 
-# Packages managed by dedicated roles (not via package-map on Linux/WSL).
+# Packages managed by dedicated roles or unavailable on certain platforms.
 # These are excluded from the "unresolved" report to avoid false positives.
 # On macOS they still resolve via package-map; on Linux/WSL the role handles them.
 - name: Define role-managed packages
   ansible.builtin.set_fact:
     packages_role_managed:
       - docker  # RL-10: docker-ce role handles this on Linux/WSL
+      - claude  # RL-14: Claude Desktop is macOS + Windows only (no Linux package)
 
 - name: Determine package-map OS key
   ansible.builtin.set_fact:

@@ -10,21 +10,22 @@
 machines:
   olli-thinkpad:
     os: windows
-    profiles: [base, dev, workstation]
+    profiles: [base, dev, workstation, personal]
     targets: [windows-host, wsl]      # provisioned on both host and WSL
 
   olli-macbook:
     os: macos
-    profiles: [base, dev, laptop, macos]
+    profiles: [base, dev, laptop, macos, personal]
     # WireGuard ref auto-derived: op://Private/olli-macbook/config
 
   olli-fedora-srv:
     os: fedora
     profiles: [base, server]
+    # No personal profile — headless server, no GUI apps.
 
   olli-mobile:
     os: macos
-    profiles: [base, laptop, macos]   # intentionally lean — no server/heavy dev
+    profiles: [base, laptop, macos, personal]   # intentionally lean — no server/heavy dev
     wireguard_op_ref: "op://Work/WireGuard-Mobile/config"   # example override (custom vault/item)
 
 defaults:

@@ -5,3 +5,5 @@ AgileBits.1Password
 SlackTechnologies.Slack
 Mozilla.Firefox
 Microsoft.VisualStudioCode
+Anthropic.Claude
+Obsidian.Obsidian
