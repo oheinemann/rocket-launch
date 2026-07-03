@@ -3,6 +3,7 @@
 packages:
   - claude
   - teams
+  - slack
   - obsidian
   - spark
   - firefox
