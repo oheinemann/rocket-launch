@@ -183,4 +183,109 @@ foreach ($font in $fonts) {
     Install-NerdFont -FontName $font
 }
 
+# --- Apply Windows Registry defaults (idempotent) ---
+function Get-WindowsDefaults {
+    param([string]$Repo)
+    $tmp = Join-Path $env:TEMP ("rl-config-defaults-" + [guid]::NewGuid())
+    git clone --depth 1 $Repo $tmp 2>$null | Out-Null
+    $file = Join-Path $tmp "windows-defaults.txt"
+    if (Test-Path $file) {
+        $lines = Get-Content $file | Where-Object { $_ -and -not $_.TrimStart().StartsWith("#") } | ForEach-Object { $_.Trim() }
+        if ($lines.Count -gt 0) { return $lines }
+    }
+    Write-Warn "No windows-defaults.txt in config repo — using built-in defaults."
+    return @(
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|MMTaskbarEnabled|DWord|1",
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|MMTaskbarMode|DWord|2",
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|HideFileExt|DWord|0",
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|Hidden|DWord|1"
+    )
+}
+
+function Set-WindowsDefault {
+    param(
+        [string]$Path,
+        [string]$Name,
+        [string]$Type,
+        [string]$Data
+    )
+    try {
+        # Ensure registry key exists
+        if (-not (Test-Path $Path)) {
+            New-Item -Path $Path -Force | Out-Null
+        }
+
+        # Determine target value based on type
+        $targetValue = $Data
+        if ($Type -eq "DWord") {
+            $targetValue = [int]$Data
+        }
+
+        # Check current value (idempotent)
+        $currentProperty = Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
+        if ($null -ne $currentProperty) {
+            $currentValue = $currentProperty.$Name
+            if ($currentValue -eq $targetValue) {
+                Write-Host "    $Name already set to $Data" -ForegroundColor Gray
+                return $false
+            }
+        }
+
+        # Set the registry value
+        if ($Type -eq "DWord") {
+            Set-ItemProperty -Path $Path -Name $Name -Value $targetValue -Type DWord
+        }
+        else {
+            Set-ItemProperty -Path $Path -Name $Name -Value $targetValue -Type String
+        }
+        Write-Ok "$Name = $Data"
+        return $true
+    }
+    catch {
+        Write-Warn "Failed to set $Path\$Name`: $($_.Exception.Message)"
+        return $false
+    }
+}
+
+Write-Step "Applying Windows defaults (registry)..."
+$defaultLines = Get-WindowsDefaults -Repo $Config
+$changedCount = 0
+
+foreach ($line in $defaultLines) {
+    $parts = $line.Split("|")
+    if ($parts.Count -lt 4) {
+        Write-Warn "Skipping malformed line: $line"
+        continue
+    }
+    $regPath = $parts[0].Trim()
+    $regName = $parts[1].Trim()
+    $regType = $parts[2].Trim()
+    $regData = $parts[3].Trim()
+
+    if ([string]::IsNullOrWhiteSpace($regPath) -or [string]::IsNullOrWhiteSpace($regName)) {
+        Write-Warn "Skipping line with empty path or name: $line"
+        continue
+    }
+
+    if ($regType -ne "DWord" -and $regType -ne "String") {
+        Write-Warn "Unsupported type '$regType' in: $line"
+        continue
+    }
+
+    $changed = Set-WindowsDefault -Path $regPath -Name $regName -Type $regType -Data $regData
+    if ($changed) {
+        $changedCount++
+    }
+}
+
+# Restart Explorer only if changes were made
+if ($changedCount -gt 0) {
+    Write-Step "Restarting Explorer to apply changes (shell will briefly reload)..."
+    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    Write-Ok "Explorer restarted — $changedCount setting(s) applied."
+}
+else {
+    Write-Host "    No registry changes needed." -ForegroundColor Gray
+}
+
 Write-Step "Windows host provisioning complete."

@@ -16,6 +16,7 @@ curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/insta
 | `profiles/*.yml` | Reusable bundles of logical package names (e.g. `base`, `dev`, `personal`). |
 | `windows-host.txt` | winget ids for Windows host GUI apps. |
 | `windows-fonts.txt` | Nerd Font names for Windows host (optional, has defaults). |
+| `windows-defaults.txt` | Registry settings for Windows host (optional, has defaults). |
 | `dotfiles/` | chezmoi source for your dotfiles (+ `op://` secret refs). |
 
 ## How resolution works
@@ -369,6 +370,52 @@ ln -s /mnt/c/Users/<username>/Sync ~/Sync
 ```
 
 The exact path depends on your Windows Syncthing configuration.
+
+## Windows Defaults (Registry Settings)
+
+The `windows-defaults.txt` file contains Windows registry settings applied by
+`bootstrap/windows-host.ps1`. This is the Windows counterpart to the `macos-defaults`
+role (macOS system preferences).
+
+### File Format
+
+One setting per line, pipe-separated. Lines starting with `#` are comments.
+
+```
+<hive:\path>|<valueName>|<DWord|String>|<data>
+```
+
+Example:
+```
+HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|HideFileExt|DWord|0
+```
+
+### Included Settings
+
+| Setting | Registry Value | Effect |
+|---------|----------------|--------|
+| Show taskbar on all monitors | `MMTaskbarEnabled = 1` | Taskbar visible on secondary monitors |
+| Taskbar buttons per monitor | `MMTaskbarMode = 2` | Buttons appear only on the monitor where the window is (0 = all, 1 = main + current, 2 = only current) |
+| Show file extensions | `HideFileExt = 0` | File extensions visible in Explorer |
+| Show hidden files | `Hidden = 1` | Hidden files visible in Explorer |
+
+All settings are under `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced`.
+
+### Behavior
+
+- **Idempotent:** Only changed values are written; unchanged settings are skipped.
+- **Explorer restart:** If any settings changed, Explorer is restarted once at the end
+  (the shell briefly reloads). No restart if nothing changed.
+- **Versionslos:** DWORD/String keys work identically on Windows 10 and Windows 11.
+- **No admin required:** All settings are in HKCU (current user).
+
+### Adding Custom Settings
+
+Add lines to `windows-defaults.txt` following the pipe-separated format. Supported types:
+- `DWord` — integer value (e.g., `0`, `1`, `2`)
+- `String` — text value
+
+Binary blobs and other types are not supported.
 
 ## Dotfiles (chezmoi)
 

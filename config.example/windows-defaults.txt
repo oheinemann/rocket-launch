@@ -1,0 +1,16 @@
+# windows-defaults.txt — HKCU registry settings applied on the Windows host.
+# Format: <hive:\path>|<valueName>|<DWord|String>|<data>   ('#' = comment)
+#
+# These settings are applied idempotently by bootstrap/windows-host.ps1.
+# Explorer is restarted only if changes were made.
+#
+# Common Explorer\Advanced settings:
+#   MMTaskbarEnabled = 1 → show taskbar on all monitors
+#   MMTaskbarMode    = 0 (all), 1 (main+current), 2 (only current monitor)
+#   HideFileExt      = 0 → show file extensions
+#   Hidden           = 1 → show hidden files
+
+HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|MMTaskbarEnabled|DWord|1
+HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|MMTaskbarMode|DWord|2
+HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|HideFileExt|DWord|0
+HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|Hidden|DWord|1
