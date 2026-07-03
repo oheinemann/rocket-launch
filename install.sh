@@ -82,8 +82,12 @@ echo
 BOOTSTRAP="$RL_SRC/bootstrap/${RL_CONTEXT}.sh"
 [ -f "$BOOTSTRAP" ] || abort "No bootstrap script for context '$RL_CONTEXT' ($BOOTSTRAP)."
 log "Phase 0: bootstrap ($RL_CONTEXT)"
+# Source with stdin from /dev/null: we may be running via `curl | bash`, where
+# the script itself is on stdin. Child installers (Homebrew, brew) that read
+# stdin would otherwise consume the rest of this script and Phase 1 would never
+# run. Interactive sudo inside the bootstrap reads /dev/tty explicitly.
 # shellcheck disable=SC1090
-. "$BOOTSTRAP"
+. "$BOOTSTRAP" </dev/null
 
 # ----------------------------------------------------------------------------
 # Install the engine into a stable location and expose `rocket` on PATH
