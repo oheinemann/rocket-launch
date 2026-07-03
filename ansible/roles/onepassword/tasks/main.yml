@@ -1,7 +1,8 @@
 ---
-# Install the 1Password CLI (`op`), used by chezmoi to resolve op:// secret
-# references at apply time. GUI 1Password (and biometric unlock) is installed
-# on the host (macOS cask / Windows winget), not here.
+# Install the 1Password CLI (`op`) and optionally the desktop GUI.
+# CLI is used by chezmoi to resolve op:// secret references at apply time.
+# GUI follows the "screen" (macOS/Fedora/Linux-Desktop); WSL is excluded because
+# the GUI runs on the Windows host (via winget, see windows-host.txt).
 
 - name: Install & configure 1Password CLI
   when: onepassword_install_cli | bool
@@ -66,6 +67,34 @@
     - name: Install 1Password CLI (dnf)
       ansible.builtin.dnf:
         name: 1password-cli
+        state: present
+      become: true
+      when: rl_context == 'fedora'
+
+# --- GUI Installation (where a desktop is present) ---
+# WSL is intentionally excluded: the GUI runs on the Windows host (via winget,
+# see windows-host.txt). CLI in WSL integrates with the Windows app.
+
+- name: Install 1Password GUI
+  when: onepassword_install_gui | bool
+  block:
+    - name: Install 1Password GUI (macOS)
+      community.general.homebrew_cask:
+        name: 1password
+        state: present
+      when: rl_os == 'macos'
+
+    - name: Install 1Password GUI (apt, Linux-Desktop only)
+      ansible.builtin.apt:
+        name: 1password
+        state: present
+        update_cache: true
+      become: true
+      when: rl_context == 'linux'
+
+    - name: Install 1Password GUI (dnf, Fedora)
+      ansible.builtin.dnf:
+        name: 1password
         state: present
       become: true
       when: rl_context == 'fedora'

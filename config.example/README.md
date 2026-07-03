@@ -62,6 +62,33 @@ These require manual setup after provisioning:
 - [ ] **App Store / iCloud:** Sign in to App Store, iCloud (for app sync)
 - [ ] **App-specific cloud sync:** Raycast sync, 1Password account, etc.
 
+## 1Password: GUI vs. CLI — Where What Lives
+
+**Rule of thumb:** GUI follows the screen, CLI follows the shell.
+
+| Context | CLI (`op`) | Desktop GUI | Notes |
+|---------|:----------:|:-----------:|-------|
+| macOS | yes | yes | Both via engine (`onepassword` role) |
+| Fedora | yes | yes | Both via engine (`onepassword` role) |
+| Linux-Desktop | yes | yes | Both via engine (`onepassword` role) |
+| **WSL2** | yes | **no** | CLI via apt; GUI runs on **Windows host** |
+| **Windows-Host** | (via App) | yes | `AgileBits.1Password` in `windows-host.txt` |
+
+### WSL2 Integration Checklist (Manual)
+
+The 1Password CLI inside WSL2 uses the Windows desktop app for authentication.
+After provisioning, enable this bridge in the **Windows 1Password app**
+(exact UI paths may vary by version — consult current 1Password documentation):
+
+- [ ] **Settings > Developer > Integrate with 1Password CLI** — enable
+- [ ] **Settings > Developer > SSH Agent** — enable (for `op://` SSH key access)
+- [ ] If prompted, allow the WSL integration toggle
+
+Once enabled:
+- `op signin` in WSL uses Windows biometrics
+- `ssh -T git@github.com` works via the 1Password SSH agent
+- chezmoi `op://` references resolve seamlessly
+
 ## Dotfiles (chezmoi)
 
 `dotfiles/` is a chezmoi source dir. File names use chezmoi conventions:

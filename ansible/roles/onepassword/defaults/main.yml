@@ -1,4 +1,7 @@
 ---
 onepassword_install_cli: true
+# Install 1Password desktop GUI where applicable (macOS, Fedora, Linux-Desktop).
+# WSL is excluded (GUI runs on the Windows host via winget).
+onepassword_install_gui: true
 # apt/rpm signing key + repo base (official 1Password Linux package sources).
 onepassword_key_url: https://downloads.1password.com/linux/keys/1password.asc
