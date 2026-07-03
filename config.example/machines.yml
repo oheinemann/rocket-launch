@@ -13,7 +13,7 @@
 machines:
   example-windows:
     os: windows
-    profiles: [base, dev, workstation, personal]
+    profiles: [base, dev, personal]
     targets: [windows-host, wsl]      # provisioned on both host and WSL
 
   example-macbook:
