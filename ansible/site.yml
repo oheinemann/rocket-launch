@@ -54,6 +54,18 @@
                | from_yaml).macos_defaults | default([])) }}
       loop: "{{ host_profiles }}"
 
+    - name: Accumulate Dock config from all selected profiles (macOS)
+      ansible.builtin.set_fact:
+        selected_dock_apps: >-
+          {{ (selected_dock_apps | default([])) +
+             ((lookup('file', rl_config_home ~ '/profiles/' ~ item ~ '.yml')
+               | from_yaml).dock_apps | default([])) }}
+        selected_dock_folders: >-
+          {{ (selected_dock_folders | default([])) +
+             ((lookup('file', rl_config_home ~ '/profiles/' ~ item ~ '.yml')
+               | from_yaml).dock_folders | default([])) }}
+      loop: "{{ host_profiles }}"
+
     # Deduplicate macos_defaults: build dict keyed by domain/key, last wins.
     - name: Deduplicate macos_defaults (by domain+key, last wins)
       ansible.builtin.set_fact:
@@ -121,6 +133,7 @@
           - "syncthing_synology_op_ref: {{ syncthing_synology_op_ref | default('(none)') }}"
           - "syncthing_folder: {{ syncthing_folder_id }} ({{ syncthing_folder_label | default('') }}) -> {{ syncthing_folder_path }}"
           - "syncthing_names: local={{ syncthing_local_name }} synology={{ syncthing_synology_name }}"
+          - "dock_apps: {{ selected_dock_apps | default([]) | length }} apps, {{ selected_dock_folders | default([]) | length }} folder(s)"
 
   roles:
     - role: preflight      # warn on missing App Store / 1Password sign-in (RL-30)
@@ -135,6 +148,11 @@
       vars:
         macos_defaults: "{{ selected_macos_defaults | default([]) }}"
       when: rl_os == 'macos'
+    - role: macos-dock     # Dock contents + order via dockutil (macOS only)
+      vars:
+        dock_apps: "{{ selected_dock_apps | default([]) }}"
+        dock_folders: "{{ selected_dock_folders | default([]) }}"
+      when: "rl_os == 'macos' and (selected_dock_apps | default([]) | length > 0)"
     - role: docker-ce      # Docker CE from official repo (Linux/WSL/Fedora only)
       when: "rl_context in ['fedora', 'linux', 'wsl'] and 'docker' in selected_packages"
     - role: wireguard      # WireGuard VPN for mobile devices (laptops)

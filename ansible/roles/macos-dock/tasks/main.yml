@@ -1,0 +1,80 @@
+---
+# Configure the macOS Dock declaratively with dockutil (RL-31).
+# macOS only; driven by dock_apps (ordered app row) and dock_folders (right of the
+# divider) from the macos profile. Idempotent: rebuild only when the Dock differs.
+
+- name: Install dockutil (macOS)
+  community.general.homebrew:
+    name: dockutil
+    state: present
+
+# --- Keep only apps that are actually installed (skip missing, no failure) ---
+- name: Stat configured Dock apps
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: dock_app_stats
+  loop: "{{ dock_apps | default([]) }}"
+  loop_control:
+    label: "{{ item | basename }}"
+
+- name: Build ordered list of present Dock apps
+  ansible.builtin.set_fact:
+    dock_apps_present: >-
+      {{ dock_app_stats.results
+         | selectattr('stat.exists', 'defined')
+         | selectattr('stat.exists')
+         | map(attribute='item') | list }}
+
+- name: Warn about configured Dock apps that are not installed
+  ansible.builtin.debug:
+    msg: "Dock: skipping (not installed) -> {{ dock_apps | difference(dock_apps_present) }}"
+  when: (dock_apps | default([]) | difference(dock_apps_present)) | length > 0
+
+# --- Compare desired vs current to stay idempotent ---
+- name: Get current Dock items
+  ansible.builtin.command: dockutil --list
+  register: dock_current
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Compute desired vs current Dock item names
+  ansible.builtin.set_fact:
+    # Desired = app labels (basename without .app) then folder names.
+    dock_desired_names: >-
+      {{ (dock_apps_present | map('basename') | map('regex_replace', '\.app$', '') | list)
+         + (dock_folders | default([]) | map(attribute='path') | map('basename') | list) }}
+    # dockutil --list prints "Label\tfile://..."; take the label (first field).
+    # TODO: verify dockutil --list column format on the target Mac (v3 output).
+    dock_current_names: >-
+      {{ dock_current.stdout_lines | default([]) | map('regex_replace', '\t.*$', '') | list }}
+
+- name: Rebuild the Dock (only when it differs)
+  when: dock_desired_names != dock_current_names
+  block:
+    - name: Remove all Dock items
+      ansible.builtin.command: dockutil --remove all --no-restart
+      changed_when: true
+
+    - name: Add Dock apps in order
+      ansible.builtin.command: dockutil --add "{{ item }}" --no-restart
+      loop: "{{ dock_apps_present }}"
+      loop_control:
+        label: "{{ item | basename }}"
+      changed_when: true
+
+    - name: Add Dock folders
+      ansible.builtin.command: >-
+        dockutil --add "{{ item.path }}"
+        --view {{ item.view | default('grid') }}
+        --display {{ item.display | default('folder') }}
+        --no-restart
+      loop: "{{ dock_folders | default([]) }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      changed_when: true
+
+    - name: Restart the Dock
+      ansible.builtin.command: killall Dock
+      changed_when: true
+      failed_when: false

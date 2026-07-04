@@ -1,0 +1,5 @@
+---
+# macos-dock role defaults. Data comes from the macos profile (site.yml threads
+# selected_dock_apps / selected_dock_folders into these).
+dock_apps: []
+dock_folders: []
