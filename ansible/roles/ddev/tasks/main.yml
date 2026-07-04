@@ -75,6 +75,19 @@
         state: present
       when: rl_os == 'macos'
 
+    # Homebrew >= 5.1.15 refuses to load formulae from non-official ("untrusted")
+    # taps unless trusted; enforced from Homebrew 6.0. Trust the ddev tap before
+    # install. Tolerant: older Homebrew has no `brew trust` subcommand and does
+    # not enforce trust, so a failure here is harmless and must not block install.
+    - name: Trust the DDEV Homebrew tap (macOS)
+      ansible.builtin.command:
+        cmd: brew trust ddev/ddev
+      register: ddev_brew_trust
+      check_mode: false
+      changed_when: false
+      failed_when: false
+      when: rl_os == 'macos'
+
     - name: Install DDEV (macOS)
       community.general.homebrew:
         name: ddev
