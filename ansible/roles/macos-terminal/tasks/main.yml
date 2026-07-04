@@ -1,0 +1,79 @@
+---
+# Configure terminal fonts on macOS (RL-32). iTerm2 via a Dynamic Profile;
+# Terminal.app by importing a user-exported .terminal profile. macOS only; runs
+# after the fonts role so the Nerd Fonts are already installed.
+
+# =============================================================================
+# iTerm2 — Dynamic Profile (fully declarative)
+# =============================================================================
+- name: Check for iTerm2
+  ansible.builtin.stat:
+    path: /Applications/iTerm.app
+  register: iterm_app
+
+- name: Configure iTerm2 font (Dynamic Profile)
+  when: iterm_app.stat.exists
+  block:
+    - name: Ensure iTerm2 DynamicProfiles directory
+      ansible.builtin.file:
+        path: "{{ ansible_facts.env.HOME }}/Library/Application Support/iTerm2/DynamicProfiles"
+        state: directory
+        mode: "0755"
+
+    - name: Write iTerm2 dynamic profile
+      ansible.builtin.template:
+        src: iterm2-dynamic-profile.json.j2
+        dest: "{{ ansible_facts.env.HOME }}/Library/Application Support/iTerm2/DynamicProfiles/rocket-launch.json"
+        mode: "0644"
+
+    # iTerm2 must be restarted to load a new dynamic profile / default.
+    - name: Set iTerm2 default profile
+      community.general.osx_defaults:
+        domain: com.googlecode.iterm2
+        key: "Default Bookmark Guid"
+        type: string
+        value: "rocket-launch-terminal"
+
+- name: Note iTerm2 not installed
+  ansible.builtin.debug:
+    msg: "iTerm2 not found (/Applications/iTerm.app) — skipping iTerm2 font config."
+  when: not iterm_app.stat.exists
+
+# =============================================================================
+# Terminal.app — import a shipped .terminal profile (font is a binary blob)
+# =============================================================================
+- name: Check for the Terminal.app profile file
+  ansible.builtin.stat:
+    path: "{{ terminal_app_profile_file }}"
+  register: terminal_profile
+  when: terminal_app_profile_file | default('') | length > 0
+
+- name: Configure Terminal.app font (import + set default)
+  when:
+    - terminal_app_profile_file | default('') | length > 0
+    - terminal_profile.stat.exists | default(false)
+  block:
+    - name: Import Terminal.app profile
+      ansible.builtin.command:
+        cmd: open -g "{{ terminal_app_profile_file }}"
+      changed_when: false
+
+    - name: Set Terminal.app default profile
+      community.general.osx_defaults:
+        domain: com.apple.Terminal
+        key: "{{ item }}"
+        type: string
+        value: "{{ terminal_app_profile_name }}"
+      loop:
+        - "Default Window Settings"
+        - "Startup Window Settings"
+
+- name: Note Terminal.app profile missing
+  ansible.builtin.debug:
+    msg: >-
+      No Terminal.app profile at {{ terminal_app_profile_file }}. Export one from
+      Terminal (Settings > Profiles > gear > Export…) with the Nerd Font set, place
+      it there, and re-run. iTerm2 was still configured.
+  when:
+    - terminal_app_profile_file | default('') | length > 0
+    - not (terminal_profile.stat.exists | default(false))

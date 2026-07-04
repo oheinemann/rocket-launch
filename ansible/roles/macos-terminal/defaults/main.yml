@@ -1,0 +1,13 @@
+---
+# macos-terminal role defaults. macOS only; runs after the fonts role.
+
+# Font used by both terminals. Display family name — iTerm2 accepts it and parses
+# the trailing token as the size. Override with a PostScript name if a terminal is
+# picky (e.g. "MesloLGSNerdFontMono-Regular").
+terminal_font: "MesloLGS Nerd Font"
+terminal_font_size: 13
+
+# Terminal.app profile to import. The font is a binary NSFont blob that cannot be
+# generated off-Mac, so ship a user-exported .terminal here. Empty/missing = skip.
+terminal_app_profile_file: "{{ rl_config_home | default('') }}/macos/Terminal.terminal"
+terminal_app_profile_name: "rocket-launch"
