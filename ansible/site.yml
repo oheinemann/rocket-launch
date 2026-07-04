@@ -97,6 +97,8 @@
           - "syncthing_synology_op_ref: {{ syncthing_synology_op_ref | default('(none)') }}"
 
   roles:
+    - role: preflight      # warn on missing App Store / 1Password sign-in (RL-30)
+      when: "'personal' in host_profiles or 'laptop' in host_profiles"
     - role: packages       # install resolved apps via the right OS manager
     - role: fonts          # Nerd Fonts for terminals, editors, p10k
       when: "'personal' in host_profiles"

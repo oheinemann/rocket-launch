@@ -1,0 +1,90 @@
+---
+# =============================================================================
+# Preflight — warn loudly about manual first-run prerequisites (RL-30)
+# =============================================================================
+# Two logins are performed by hand and, if missing, cause SILENT skips:
+#   - 1Password CLI (op) sign-in -> op:// secrets are skipped (WireGuard tunnel
+#     config, Syncthing Synology pairing, chezmoi secrets).
+#   - App Store sign-in          -> mas apps (wireguard-gui, magnet, ...) skipped.
+# This role only checks and warns — it never fails the run. Triggered by
+# "'personal' in host_profiles or 'laptop' in host_profiles" (hosts that use
+# op:// secrets and/or Mac App Store apps).
+
+# --- 1Password CLI (op) sign-in ---------------------------------------------
+# `op whoami` returns rc=0 only when signed in. If op is not installed yet
+# (fresh first run, before the onepassword role), the command fails too — either
+# way the guidance ("sign in and re-run") is correct.
+- name: Preflight — check 1Password CLI sign-in
+  ansible.builtin.command:
+    cmd: op whoami
+  register: preflight_op_whoami
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: Preflight — evaluate op sign-in state
+  ansible.builtin.set_fact:
+    preflight_op_ok: "{{ (preflight_op_whoami.rc | default(1)) == 0 }}"
+
+# --- Mac App Store apps ------------------------------------------------------
+- name: Preflight — collect selected Mac App Store apps (macOS)
+  ansible.builtin.set_fact:
+    preflight_mas_apps: "{{ (preflight_mas_apps | default([])) + [item] }}"
+  loop: "{{ selected_packages | default([]) }}"
+  when:
+    - rl_os == 'macos'
+    - item in package_map
+    - "'macos' in package_map[item]"
+    - package_map[item].macos.mgr == 'mas'
+
+# `mas account` is unreliable on modern macOS (Apple removed the private API), so
+# we treat a non-empty account as "signed in" but never assert the negative — if
+# it is empty/errors and mas apps are queued, we remind rather than claim failure.
+- name: Preflight — best-effort App Store account (macOS)
+  ansible.builtin.command:
+    cmd: mas account
+  register: preflight_mas_account
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  when:
+    - rl_os == 'macos'
+    - (preflight_mas_apps | default([]) | length) > 0
+
+- name: Preflight — evaluate App Store sign-in state
+  ansible.builtin.set_fact:
+    preflight_appstore_ok: >-
+      {{ rl_os == 'macos'
+         and (preflight_mas_account.rc | default(1)) == 0
+         and (preflight_mas_account.stdout | default('') | trim | length) > 0 }}
+
+# --- Build report lines ------------------------------------------------------
+- name: Preflight — build 1Password status lines
+  ansible.builtin.set_fact:
+    preflight_op_lines: >-
+      {{ ['[OK]  1Password CLI (op): signed in.'] if preflight_op_ok
+         else ['[!!]  1Password CLI (op): NOT signed in.',
+               '      -> run `op signin`, then re-run provisioning.',
+               '      Without it these are SKIPPED: WireGuard tunnel config,',
+               '      Syncthing Synology pairing, chezmoi op:// secrets.'] }}
+
+- name: Preflight — build App Store status lines
+  ansible.builtin.set_fact:
+    preflight_mas_lines: >-
+      {{ []
+         if (rl_os != 'macos'
+             or (preflight_mas_apps | default([]) | length) == 0
+             or (preflight_appstore_ok | default(false)))
+         else ['[!!]  App Store: sign-in needed for '
+               ~ (preflight_mas_apps | length) ~ ' app(s):',
+               '      ' ~ (preflight_mas_apps | join(', ')),
+               '      -> open App Store.app, sign in, then re-run provisioning.',
+               '      Without it these Mac App Store apps are SKIPPED.'] }}
+
+- name: Preflight — first-run prerequisite report
+  ansible.builtin.debug:
+    msg: >-
+      {{ ['──────── rocket-launch: first-run prerequisites ────────']
+         + (preflight_op_lines | default([]))
+         + (preflight_mas_lines | default([]))
+         + ['────────────────────────────────────────────────────────'] }}
