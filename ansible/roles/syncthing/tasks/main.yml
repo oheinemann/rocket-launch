@@ -101,7 +101,7 @@
     # Enable linger so user services start at boot (requires become)
     - name: Check if loginctl linger is enabled
       ansible.builtin.command:
-        cmd: "loginctl show-user {{ ansible_user_id }} --property=Linger"
+        cmd: "loginctl show-user {{ ansible_facts.user_id }} --property=Linger"
       register: syncthing_linger_check
       check_mode: false
       changed_when: false
@@ -110,7 +110,7 @@
 
     - name: Enable loginctl linger for user
       ansible.builtin.command:
-        cmd: "loginctl enable-linger {{ ansible_user_id }}"
+        cmd: "loginctl enable-linger {{ ansible_facts.user_id }}"
       become: true
       register: syncthing_linger_enable
       changed_when: syncthing_linger_check.stdout is not defined or 'Linger=yes' not in syncthing_linger_check.stdout
@@ -132,7 +132,7 @@
       failed_when:
         - syncthing_service_result is failed
         - not ansible_check_mode
-        - ansible_service_mgr == 'systemd'
+        - ansible_facts.service_mgr == 'systemd'
       when: rl_context in ['fedora', 'linux']
 
     # =========================================================================
@@ -145,14 +145,31 @@
       block:
 
         # --- Determine config.xml path (v2: ~/.local/state, v1: ~/.config) ---
+        # Wait for Syncthing to generate config.xml on first start (race condition fix).
+        # On fresh install, the daemon needs a few seconds to write config + API key.
+        - name: Wait for Syncthing config.xml to appear
+          ansible.builtin.stat:
+            path: "{{ item }}"
+          register: syncthing_config_wait
+          until: syncthing_config_wait.stat.exists | default(false)
+          retries: 15
+          delay: 2
+          loop:
+            - "{{ ansible_facts.env.HOME }}/.local/state/syncthing/config.xml"
+            - "{{ ansible_facts.env.HOME }}/.config/syncthing/config.xml"
+          loop_control:
+            label: "{{ item | basename }}"
+          check_mode: false
+          failed_when: false
+
         - name: Check for Syncthing config.xml (XDG state dir)
           ansible.builtin.stat:
-            path: "{{ ansible_env.HOME }}/.local/state/syncthing/config.xml"
+            path: "{{ ansible_facts.env.HOME }}/.local/state/syncthing/config.xml"
           register: syncthing_config_state
 
         - name: Check for Syncthing config.xml (legacy config dir)
           ansible.builtin.stat:
-            path: "{{ ansible_env.HOME }}/.config/syncthing/config.xml"
+            path: "{{ ansible_facts.env.HOME }}/.config/syncthing/config.xml"
           register: syncthing_config_legacy
 
         - name: Set Syncthing config path

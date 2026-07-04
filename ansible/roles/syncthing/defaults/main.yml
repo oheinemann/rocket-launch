@@ -3,7 +3,7 @@
 # The role is triggered by "'personal' in host_profiles" in site.yml.
 
 # Path to the Syncthing sync folder.
-syncthing_folder_path: "{{ ansible_env.HOME }}/Sync"
+syncthing_folder_path: "{{ ansible_facts.env.HOME }}/Sync"
 
 # Folder ID for the shared folder (must match on all devices sharing it).
 syncthing_folder_id: sync-vault
