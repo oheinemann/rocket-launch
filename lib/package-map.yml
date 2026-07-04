@@ -28,6 +28,11 @@ neovim:
   apt:   { mgr: apt,  id: neovim }
   dnf:   { mgr: dnf,  id: neovim }
 
+direnv:
+  macos: { mgr: brew, id: direnv }
+  apt:   { mgr: apt,  id: direnv }
+  dnf:   { mgr: dnf,  id: direnv }
+
 # docker: on macOS -> OrbStack (brew-cask); on Linux/WSL -> docker-ce role (RL-10).
 # No apt/dnf mapping here — the docker-ce role handles the official Docker repo
 # to avoid conflicts with apt docker.io / dnf docker (containerd.io issue).
