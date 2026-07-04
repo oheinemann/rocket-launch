@@ -1,0 +1,9 @@
+---
+# ptyxis role defaults (Fedora's default GNOME terminal).
+# terminal_font / terminal_font_size come from site.yml vars (shared with the
+# macos-terminal role); these are standalone fallbacks.
+terminal_font: "FiraCode Nerd Font"
+terminal_font_size: 14
+
+# Ptyxis built-in palette name applied to the default profile.
+ptyxis_palette: "solarized"

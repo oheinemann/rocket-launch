@@ -1,0 +1,45 @@
+---
+# Configure Ptyxis (Fedora's default terminal): Nerd Font + Solarized palette.
+# Linux only, self-gated on ptyxis being installed. Uses dconf (needs a running
+# D-Bus session — present during a normal desktop provision run; on WSL there is
+# no ptyxis so the block is skipped).
+
+- name: Check for Ptyxis
+  ansible.builtin.command: command -v ptyxis
+  register: ptyxis_bin
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Configure Ptyxis
+  when: ptyxis_bin.rc == 0
+  block:
+    - name: Ptyxis — use a custom font (not the system monospace)
+      community.general.dconf:
+        key: /org/gnome/Ptyxis/use-system-font
+        value: "false"
+        state: present
+
+    - name: Ptyxis — set the terminal font
+      community.general.dconf:
+        key: /org/gnome/Ptyxis/font-name
+        value: "'{{ terminal_font }} {{ terminal_font_size }}'"
+        state: present
+
+    - name: Ptyxis — read the default profile UUID
+      ansible.builtin.command: gsettings get org.gnome.Ptyxis default-profile-uuid
+      register: ptyxis_profile
+      changed_when: false
+      check_mode: false
+
+    - name: Ptyxis — apply the palette to the default profile
+      community.general.dconf:
+        key: "/org/gnome/Ptyxis/Profiles/{{ ptyxis_profile.stdout | trim | trim(\"'\") }}/palette"
+        value: "'{{ ptyxis_palette }}'"
+        state: present
+      when: ptyxis_profile.stdout | default('') | trim | length > 0
+
+- name: Note Ptyxis not installed
+  ansible.builtin.debug:
+    msg: "Ptyxis not found — skipping terminal font/palette (not Fedora GNOME?)."
+  when: ptyxis_bin.rc != 0

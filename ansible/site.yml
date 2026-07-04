@@ -17,6 +17,9 @@
     rl_os: >-
       {{ 'macos' if ansible_facts.system == 'Darwin'
          else ('linux' if ansible_facts.system == 'Linux' else 'unknown') }}
+    # Shared terminal font (macos-terminal + ptyxis roles). Nerd Font for p10k glyphs.
+    terminal_font: "FiraCode Nerd Font"
+    terminal_font_size: 14
 
   pre_tasks:
     - name: Load package map (engine)
@@ -143,6 +146,8 @@
       when: "'personal' in host_profiles"
     - role: macos-terminal # point iTerm2 + Terminal.app at the Nerd Font (macOS)
       when: "rl_os == 'macos' and 'personal' in host_profiles"
+    - role: ptyxis         # Ptyxis (Fedora) Nerd Font + Solarized palette (Linux)
+      when: "rl_os == 'linux' and 'personal' in host_profiles"
     - role: shell          # zsh + oh-my-zsh + p10k (fonts via fonts role)
     - role: onepassword    # 1Password CLI (op) — needed by chezmoi for op://
     - role: chezmoi        # dotfiles + secrets via chezmoi
