@@ -143,63 +143,12 @@ ensure_github_access() {
     fi
   fi
 
-  # --- B) Interactive gh path (TTY available, no token) ---
-  if [ -e /dev/tty ]; then
-    # Prompt user
-    printf '%s==>%s %sPrivate config repo needs GitHub access. Authenticate now with gh? [Y/n]%s ' \
-      "$RL_BLUE" "$RL_END" "$RL_BOLD" "$RL_END" >/dev/tty
-    local answer
-    read -r answer </dev/tty || answer=""
-    # Default to Y if empty
-    case "$answer" in
-      [Nn]*)
-        warn "Authentication declined."
-        return 1
-        ;;
-    esac
-
-    # Install gh if needed
-    if ! ensure_gh; then
-      warn "Could not install gh CLI."
-      return 1
-    fi
-
-    # Determine protocol from original URL
-    local protocol="https"
-    if [[ "$repo" =~ ^git@ ]]; then
-      protocol="ssh"
-    fi
-
-    log "Running 'gh auth login' (browser/device code required)..."
-    log "Note: gh will create a bootstrap SSH key if using SSH protocol."
-    log "      This key can be removed later once 1Password SSH is configured."
-
-    # Run gh auth login interactively via /dev/tty
-    if [ "$protocol" = "ssh" ]; then
-      if ! gh auth login --hostname github.com --git-protocol ssh </dev/tty >/dev/tty 2>&1; then
-        warn "gh auth login did not complete inside the installer."
-        warn "Run it directly in a normal terminal, then re-run provisioning:"
-        warn "  gh auth login          # GitHub.com → follow the browser flow"
-        warn "  rocket provision --config $repo"
-        return 1
-      fi
-    else
-      if ! gh auth login --hostname github.com --git-protocol https </dev/tty >/dev/tty 2>&1; then
-        warn "gh auth login did not complete inside the installer."
-        warn "Run it directly in a normal terminal, then re-run provisioning:"
-        warn "  gh auth login          # GitHub.com → follow the browser flow"
-        warn "  rocket provision --config $repo"
-        return 1
-      fi
-      # Set up git credential helper for HTTPS
-      gh auth setup-git >/dev/null 2>&1 || true
-    fi
-
-    log "GitHub authentication configured."
-    return 0
-  fi
-
-  # --- C) No token and no TTY — cannot proceed interactively ---
+  # --- B) No token: install gh so the tool is ready, then fall through to the
+  #        caller's manual guidance. gh's interactive login TUI (arrow-key menus)
+  #        cannot run reliably inside `curl | bash` — the outer shell already holds
+  #        the terminal, so gh aborts with "unexpected escape sequence from
+  #        terminal". The user runs `gh auth login` in their own terminal instead.
+  ensure_gh || true
   return 1
 }
 
@@ -257,14 +206,17 @@ clone_or_update_config() {
           fi
         fi
       else
-        # Auth helper failed or declined — show manual instructions
-        warn "Could not clone the private config repo:"
+        # Could not obtain access — clear, copy-pasteable next steps.
+        local https_repo
+        https_repo="$(ssh_to_https_url "$repo")"
+        warn "Cannot access the private config repo yet:"
         warn "  $repo"
-        warn "A fresh machine has no GitHub access yet. Set up ONE of these, then re-run:"
-        warn "  • SSH  (git@github.com:...): add an SSH key to GitHub — e.g. sign into the"
-        warn "    1Password app and enable its SSH agent, or 'gh auth login'."
-        warn "  • HTTPS (https://github.com/...): 'gh auth login' or a Personal Access Token."
-        abort "Re-run after authenticating: rocket provision --config $repo"
+        warn "Authenticate GitHub in a SEPARATE terminal, then re-run. Easiest:"
+        warn "  1) gh auth login       # GitHub.com → HTTPS → Login with a web browser"
+        warn "  2) rocket provision --config $https_repo"
+        warn "(gh is installed. Alternatively: 1Password SSH agent for the SSH URL,"
+        warn " or set RL_CONFIG_TOKEN=<PAT> for non-interactive auth.)"
+        abort "Re-run after authenticating."
       fi
     fi
   else
