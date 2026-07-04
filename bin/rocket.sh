@@ -54,7 +54,19 @@ cmd_bootstrap() {
 clone_or_update_config() {
   local repo="$1"
   if [ ! -d "$RL_CONFIG_HOME/.git" ]; then
-    logn "Cloning config repo:"; git clone "$repo" "$RL_CONFIG_HOME" >/dev/null 2>&1; logk
+    logn "Cloning config repo:"
+    if git clone "$repo" "$RL_CONFIG_HOME" >/dev/null 2>&1; then
+      logk
+    else
+      echo
+      warn "Could not clone the private config repo:"
+      warn "  $repo"
+      warn "A fresh machine has no GitHub access yet. Set up ONE of these, then re-run:"
+      warn "  • SSH  (git@github.com:...): add an SSH key to GitHub — e.g. sign into the"
+      warn "    1Password app and enable its SSH agent, or 'gh auth login'."
+      warn "  • HTTPS (https://github.com/...): 'gh auth login' or a Personal Access Token."
+      abort "Re-run after authenticating: rocket provision --config $repo"
+    fi
   else
     logn "Updating config repo:"; git -C "$RL_CONFIG_HOME" pull --ff-only >/dev/null 2>&1 || true; logk
   fi
