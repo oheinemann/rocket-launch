@@ -144,42 +144,38 @@
       when: not ansible_check_mode
       block:
 
-        # --- Determine config.xml path (v2: ~/.local/state, v1: ~/.config) ---
-        # Wait for Syncthing to generate config.xml on first start (race condition fix).
-        # On fresh install, the daemon needs a few seconds to write config + API key.
+        # --- Determine config.xml path (OS-aware) ---
+        # macOS keeps config under ~/Library/Application Support/Syncthing; Linux
+        # uses XDG (~/.local/state on v2, ~/.config on v1). On a fresh install the
+        # daemon writes config.xml a few seconds after start, so poll for it — a
+        # single retry loop across the candidate dirs (not per-path, so a missing
+        # candidate does not waste the full timeout).
+        - name: Derive Syncthing config dir candidates (OS-aware)
+          ansible.builtin.set_fact:
+            syncthing_config_dirs: >-
+              {{ [ ansible_facts.env.HOME ~ '/Library/Application Support/Syncthing' ]
+                 if rl_os == 'macos'
+                 else [ ansible_facts.env.HOME ~ '/.local/state/syncthing',
+                        ansible_facts.env.HOME ~ '/.config/syncthing' ] }}
+
         - name: Wait for Syncthing config.xml to appear
-          ansible.builtin.stat:
-            path: "{{ item }}"
-          register: syncthing_config_wait
-          until: syncthing_config_wait.stat.exists | default(false)
+          ansible.builtin.find:
+            paths: "{{ syncthing_config_dirs }}"
+            patterns: config.xml
+            file_type: file
+          register: syncthing_config_find
+          until: (syncthing_config_find.matched | default(0)) > 0
           retries: 15
           delay: 2
-          loop:
-            - "{{ ansible_facts.env.HOME }}/.local/state/syncthing/config.xml"
-            - "{{ ansible_facts.env.HOME }}/.config/syncthing/config.xml"
-          loop_control:
-            label: "{{ item | basename }}"
           check_mode: false
           failed_when: false
-
-        - name: Check for Syncthing config.xml (XDG state dir)
-          ansible.builtin.stat:
-            path: "{{ ansible_facts.env.HOME }}/.local/state/syncthing/config.xml"
-          register: syncthing_config_state
-
-        - name: Check for Syncthing config.xml (legacy config dir)
-          ansible.builtin.stat:
-            path: "{{ ansible_facts.env.HOME }}/.config/syncthing/config.xml"
-          register: syncthing_config_legacy
 
         - name: Set Syncthing config path
           ansible.builtin.set_fact:
             syncthing_config_path: >-
-              {{ syncthing_config_state.stat.path
-                 if syncthing_config_state.stat.exists | default(false)
-                 else (syncthing_config_legacy.stat.path
-                       if syncthing_config_legacy.stat.exists | default(false)
-                       else '') }}
+              {{ (syncthing_config_find.files | first).path
+                 if (syncthing_config_find.matched | default(0)) > 0
+                 else '' }}
 
         - name: REST API configuration
           when: syncthing_config_path | length > 0
