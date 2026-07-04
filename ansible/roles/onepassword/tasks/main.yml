@@ -17,7 +17,7 @@
     # --- Debian/Ubuntu/WSL ---
     - name: Compute apt architecture
       ansible.builtin.set_fact:
-        op_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+        op_apt_arch: "{{ 'arm64' if ansible_facts.architecture == 'aarch64' else 'amd64' }}"
       when: rl_context in ['wsl', 'linux']
 
     - name: Add 1Password signing key (apt)

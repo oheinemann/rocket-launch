@@ -80,7 +80,7 @@
 
     - name: Add Docker signing key (apt)
       ansible.builtin.get_url:
-        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+        url: "https://download.docker.com/linux/{{ ansible_facts.distribution | lower }}/gpg"
         dest: /etc/apt/keyrings/docker.asc
         mode: "0644"
       become: true
@@ -88,15 +88,15 @@
 
     - name: Compute apt architecture
       ansible.builtin.set_fact:
-        docker_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+        docker_apt_arch: "{{ 'arm64' if ansible_facts.architecture == 'aarch64' else 'amd64' }}"
       when: rl_context in ['linux', 'wsl']
 
     - name: Add Docker apt repository
       ansible.builtin.deb822_repository:
         name: docker
         types: [deb]
-        uris: ["https://download.docker.com/linux/{{ ansible_distribution | lower }}"]
-        suites: ["{{ ansible_distribution_release }}"]
+        uris: ["https://download.docker.com/linux/{{ ansible_facts.distribution | lower }}"]
+        suites: ["{{ ansible_facts.distribution_release }}"]
         components: [stable]
         architectures: ["{{ docker_apt_arch }}"]
         signed_by: /etc/apt/keyrings/docker.asc
@@ -153,7 +153,7 @@
       failed_when:
         - docker_service_result is failed
         - not ansible_check_mode
-        - ansible_service_mgr == 'systemd'
+        - ansible_facts.service_mgr == 'systemd'
       when: rl_context in ['fedora', 'linux', 'wsl']
 
     # NOTE: Group membership change requires a new login session to take effect.
@@ -162,7 +162,7 @@
 
     - name: Add current user to docker group
       ansible.builtin.user:
-        name: "{{ ansible_user_id }}"
+        name: "{{ ansible_facts.user_id }}"
         groups: docker
         append: true
       become: true

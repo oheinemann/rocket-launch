@@ -16,7 +16,7 @@
 # --- Linux: Download from GitHub releases ---
 - name: Ensure local font directory (Linux)
   ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.local/share/fonts"
+    path: "{{ ansible_facts.env.HOME }}/.local/share/fonts"
     state: directory
     mode: "0755"
   when: rl_os == 'linux'
@@ -24,9 +24,9 @@
 - name: Download and install Nerd Fonts (Linux)
   ansible.builtin.unarchive:
     src: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerd_fonts_version }}/{{ item.name }}.zip"
-    dest: "{{ ansible_env.HOME }}/.local/share/fonts"
+    dest: "{{ ansible_facts.env.HOME }}/.local/share/fonts"
     remote_src: true
-    creates: "{{ ansible_env.HOME }}/.local/share/fonts/{{ item.marker }}"
+    creates: "{{ ansible_facts.env.HOME }}/.local/share/fonts/{{ item.marker }}"
   loop: "{{ fonts_list }}"
   loop_control:
     label: "{{ item.name }}"

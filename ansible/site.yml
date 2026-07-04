@@ -15,8 +15,8 @@
   vars:
     rl_engine_home: "{{ playbook_dir | dirname }}"
     rl_os: >-
-      {{ 'macos' if ansible_system == 'Darwin'
-         else ('linux' if ansible_system == 'Linux' else 'unknown') }}
+      {{ 'macos' if ansible_facts.system == 'Darwin'
+         else ('linux' if ansible_facts.system == 'Linux' else 'unknown') }}
 
   pre_tasks:
     - name: Load package map (engine)
