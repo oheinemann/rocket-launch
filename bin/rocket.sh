@@ -266,17 +266,28 @@ cmd_provision() {
   # sudo already works, skip it; otherwise let ansible ask once. --no-sudo opts out.
   local become_args=()
   if [ "$no_sudo" != true ]; then
-    # Prime sudo once and keep the timestamp fresh for the whole run. This covers
-    # BOTH ansible become tasks AND Homebrew's internal `sudo installer` for
-    # pkg-based casks (e.g. microsoft-teams), which otherwise fail mid-run with
-    # "sudo: a terminal is required to read the password".
+    # Some casks install a .pkg and call `sudo installer` internally, which under
+    # ansible has no TTY ("sudo: a terminal is required"). Priming sudo does not
+    # help (macOS tty_tickets binds the cache to a TTY the ansible child lacks).
+    # Grant passwordless sudo for this run via a validated, temporary sudoers
+    # drop-in, removed on exit. Also lets ansible become tasks run without prompts.
     if ! sudo -n true 2>/dev/null; then
-      log "Administrator rights are needed (some apps install via a pkg installer)."
-      sudo -v || abort "Could not obtain sudo access (needed for pkg-based apps)."
+      log "Administrator rights are needed for the setup."
+      sudo -v || abort "Could not obtain sudo access."
     fi
-    ( while true; do sudo -n true 2>/dev/null || break; sleep 50; done ) &
-    _rl_sudo_pid=$!
-    trap 'kill "${_rl_sudo_pid:-}" 2>/dev/null || true' EXIT
+    if ! sudo -n test -f /etc/sudoers.d/rocket-launch 2>/dev/null; then
+      local _rl_sudoers_tmp
+      _rl_sudoers_tmp="$(mktemp)"
+      printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$(id -un)" > "$_rl_sudoers_tmp"
+      if sudo visudo -cf "$_rl_sudoers_tmp" >/dev/null 2>&1; then
+        sudo install -m 0440 -o root "$_rl_sudoers_tmp" /etc/sudoers.d/rocket-launch
+        trap 'sudo rm -f /etc/sudoers.d/rocket-launch 2>/dev/null || true' EXIT
+        log "Temporary passwordless sudo enabled (removed when this run ends)."
+      else
+        warn "Could not set up passwordless sudo — pkg-based casks may fail."
+      fi
+      rm -f "$_rl_sudoers_tmp"
+    fi
   fi
 
   local rl_hostname
