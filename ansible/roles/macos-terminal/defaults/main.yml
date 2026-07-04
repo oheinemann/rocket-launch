@@ -1,11 +1,16 @@
 ---
 # macos-terminal role defaults. macOS only; runs after the fonts role.
 
-# Font used by the terminals. Display family name — iTerm2 accepts it and parses
-# the trailing token as the size. Authoritative value is set in site.yml vars; this
-# is the standalone fallback. Override with a PostScript name if a terminal is picky.
+# terminal_font/size come from site.yml vars (shared with Ptyxis); these are
+# standalone fallbacks.
 terminal_font: "FiraCode Nerd Font"
 terminal_font_size: 14
+
+# iTerm2 needs the PostScript name in "Normal Font" (the display name resolves to
+# Menlo). FiraCodeNF-Ret = FiraCode Nerd Font Retina (~weight 450, matches Ptyxis);
+# use FiraCodeNF-Reg for Regular. Verify on the Mac with:
+#   mdls -name com_apple_ats_name_postscript ~/Library/Fonts/FiraCodeNerdFont-Retina.ttf
+iterm_font: "FiraCodeNF-Ret"
 
 # Terminal.app profile to import. The font is a binary NSFont blob that cannot be
 # generated off-Mac, so ship a user-exported .terminal here. Empty/missing = skip.
