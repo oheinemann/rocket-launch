@@ -8,6 +8,9 @@ syncthing_folder_path: "{{ ansible_facts.env.HOME }}/Sync"
 # Folder ID for the shared folder (must match on all devices sharing it).
 syncthing_folder_id: sync-vault
 
+# Human-readable folder label shown in the Web UI. Empty -> falls back to the ID.
+syncthing_folder_label: ""
+
 # 1Password reference to the Synology device ID.
 # Per-host value in machines.yml can override.
 syncthing_synology_op_ref: "op://Private/Syncthing-Synology/device-id"

@@ -326,7 +326,10 @@
                         body_format: json
                         body:
                           id: "{{ syncthing_folder_id }}"
-                          label: "{{ syncthing_folder_id }}"
+                          label: >-
+                            {{ syncthing_folder_label
+                               if (syncthing_folder_label | default('') | length > 0)
+                               else syncthing_folder_id }}
                           path: "{{ syncthing_folder_path }}"
                           type: sendreceive
                           devices:
