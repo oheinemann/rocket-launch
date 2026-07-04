@@ -177,12 +177,18 @@ ensure_github_access() {
     # Run gh auth login interactively via /dev/tty
     if [ "$protocol" = "ssh" ]; then
       if ! gh auth login --hostname github.com --git-protocol ssh </dev/tty >/dev/tty 2>&1; then
-        warn "gh auth login failed."
+        warn "gh auth login did not complete inside the installer."
+        warn "Run it directly in a normal terminal, then re-run provisioning:"
+        warn "  gh auth login          # GitHub.com → follow the browser flow"
+        warn "  rocket provision --config $repo"
         return 1
       fi
     else
       if ! gh auth login --hostname github.com --git-protocol https </dev/tty >/dev/tty 2>&1; then
-        warn "gh auth login failed."
+        warn "gh auth login did not complete inside the installer."
+        warn "Run it directly in a normal terminal, then re-run provisioning:"
+        warn "  gh auth login          # GitHub.com → follow the browser flow"
+        warn "  rocket provision --config $repo"
         return 1
       fi
       # Set up git credential helper for HTTPS
