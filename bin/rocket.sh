@@ -14,7 +14,15 @@
 #
 set -euo pipefail
 
-RL_HOME="${RL_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# Resolve this script's real path even when invoked via the ~/.local/bin/rocket
+# symlink, so RL_HOME points at the engine checkout (not ~/.local).
+_rl_src="${BASH_SOURCE[0]}"
+while [ -h "$_rl_src" ]; do
+  _rl_dir="$(cd -P "$(dirname "$_rl_src")" >/dev/null 2>&1 && pwd)"
+  _rl_src="$(readlink "$_rl_src")"
+  case "$_rl_src" in /*) ;; *) _rl_src="$_rl_dir/$_rl_src" ;; esac
+done
+RL_HOME="${RL_HOME:-$(cd -P "$(dirname "$_rl_src")/.." >/dev/null 2>&1 && pwd)}"
 # shellcheck disable=SC1091
 . "$RL_HOME/lib/log.sh"
 # shellcheck disable=SC1091
