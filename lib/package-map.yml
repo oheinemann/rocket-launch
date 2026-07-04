@@ -105,12 +105,10 @@ windows-app:
   # Microsoft "Windows App" (formerly Remote Desktop) — RDP client for remote access.
   macos: { mgr: mas, id: 1295203466 }
 calendars:
-  # Calendars by Readdle.
-  # TODO: verify Mac App Store id via `mas search` on target Mac (not iOS variant)
-  macos: { mgr: mas, id: 1161233340 }
+  # Calendars by Readdle (Mac). Verified via `mas search calendars` on the Air.
+  macos: { mgr: mas, id: 608834326 }
 be-focused:
-  # Be Focused (Pomodoro timer).
-  # TODO: verify Mac App Store id via `mas search` on target Mac (not iOS variant)
+  # Be Focused - Pomodoro Timer (Mac). Verified on the Air.
   macos: { mgr: mas, id: 973134470 }
 wireguard-gui:
   # WireGuard GUI app (official, macOS only). On macOS laptops, install via mas;
