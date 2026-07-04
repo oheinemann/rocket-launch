@@ -14,21 +14,24 @@
   changed_when: false
   failed_when: false
 
-- name: Fail if Docker is not available (skip in check mode)
-  ansible.builtin.fail:
+- name: Note if Docker is not available (DDEV install skipped)
+  ansible.builtin.debug:
     msg: >-
-      DDEV requires Docker — install the 'docker' package first (see RL-10).
-      Docker command not found or not accessible.
+      Docker is not available yet — skipping DDEV. On macOS launch OrbStack once
+      (it provides the `docker` CLI + daemon); on Linux/WSL start the docker
+      service (see RL-10). Then re-run provisioning to install DDEV.
   when:
     - not ansible_check_mode
     - docker_check.rc != 0
 
 # =============================================================================
-# DDEV Installation
+# DDEV Installation (only when Docker is available)
 # =============================================================================
 
 - name: Install DDEV
-  when: ddev_install | bool
+  when:
+    - ddev_install | bool
+    - docker_check.rc == 0
   block:
     # --- macOS ---
     - name: Add DDEV Homebrew tap (macOS)
