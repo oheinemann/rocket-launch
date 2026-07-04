@@ -88,7 +88,7 @@
     # Shared folder settings. Folder IDs are immutable and must match on every
     # device sharing the folder, so they live in config (top-level `syncthing:`
     # block, per-host override possible), not hardcoded in the engine.
-    - name: Resolve Syncthing folder settings for this host
+    - name: Resolve Syncthing settings for this host
       ansible.builtin.set_fact:
         syncthing_folder_id: >-
           {{ machines[rl_hostname].syncthing_folder_id
@@ -100,6 +100,14 @@
           {{ machines[rl_hostname].syncthing_folder_path
              | default((syncthing | default({})).folder_path
                        | default(ansible_facts.env.HOME ~ '/Sync')) }}
+        # Local device name defaults to the resolved hostname (nicer than the
+        # network FQDN Syncthing picks up, e.g. Mac.fritz.box).
+        syncthing_local_name: >-
+          {{ machines[rl_hostname].syncthing_local_name
+             | default((syncthing | default({})).local_name | default(rl_hostname)) }}
+        syncthing_synology_name: >-
+          {{ machines[rl_hostname].syncthing_synology_name
+             | default((syncthing | default({})).synology_name | default('Synology')) }}
 
     - name: Show resolution summary
       ansible.builtin.debug:
@@ -112,6 +120,7 @@
           - "wireguard_op_ref: {{ wireguard_op_ref | default('(none)') }}"
           - "syncthing_synology_op_ref: {{ syncthing_synology_op_ref | default('(none)') }}"
           - "syncthing_folder: {{ syncthing_folder_id }} ({{ syncthing_folder_label | default('') }}) -> {{ syncthing_folder_path }}"
+          - "syncthing_names: local={{ syncthing_local_name }} synology={{ syncthing_synology_name }}"
 
   roles:
     - role: preflight      # warn on missing App Store / 1Password sign-in (RL-30)
@@ -138,6 +147,8 @@
         syncthing_folder_id: "{{ syncthing_folder_id }}"
         syncthing_folder_label: "{{ syncthing_folder_label }}"
         syncthing_folder_path: "{{ syncthing_folder_path }}"
+        syncthing_local_name: "{{ syncthing_local_name }}"
+        syncthing_synology_name: "{{ syncthing_synology_name }}"
       when: "'personal' in host_profiles"
     - role: default-mail   # Set default mail client via duti (macOS only)
       when: "rl_os == 'macos' and 'spark' in selected_packages"

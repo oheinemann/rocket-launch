@@ -229,6 +229,46 @@
                     syncthing_local_device_id: "{{ (syncthing_status.content | from_json).myID }}"
                   no_log: true
 
+                # --- Set local device name (Web UI "This Device") ---
+                # Syncthing seeds the local name from the system hostname (e.g.
+                # Mac.fritz.box); rename it to the configured name if it differs.
+                - name: Get current Syncthing devices (for local name)
+                  ansible.builtin.uri:
+                    url: "{{ syncthing_api_url }}/rest/config/devices"
+                    headers:
+                      X-API-Key: "{{ syncthing_api_key }}"
+                    method: GET
+                    return_content: true
+                  register: syncthing_all_devices
+                  no_log: true
+                  when: syncthing_local_name | default('') | length > 0
+
+                - name: Determine current local device name
+                  ansible.builtin.set_fact:
+                    syncthing_local_current_name: >-
+                      {{ ((syncthing_all_devices.content | default('[]') | from_json)
+                          | selectattr('deviceID', 'equalto', syncthing_local_device_id)
+                          | map(attribute='name') | first) | default('') }}
+                  no_log: true
+                  when: syncthing_local_name | default('') | length > 0
+
+                - name: Set local device name
+                  ansible.builtin.uri:
+                    url: "{{ syncthing_api_url }}/rest/config/devices/{{ syncthing_local_device_id }}"
+                    headers:
+                      X-API-Key: "{{ syncthing_api_key }}"
+                    method: PATCH
+                    body_format: json
+                    body:
+                      name: "{{ syncthing_local_name }}"
+                    status_code: [200, 201]
+                  register: syncthing_rename_local
+                  changed_when: true
+                  no_log: true
+                  when:
+                    - syncthing_local_name | default('') | length > 0
+                    - syncthing_local_current_name | default('') != syncthing_local_name
+
                 # --- Read Synology device ID from 1Password ---
                 - name: Read Synology device ID from 1Password
                   ansible.builtin.command:
@@ -269,6 +309,14 @@
                              | list | length > 0 }}
                       no_log: true
 
+                    - name: Determine current Synology device name
+                      ansible.builtin.set_fact:
+                        syncthing_synology_current_name: >-
+                          {{ ((syncthing_devices.content | from_json)
+                              | selectattr('deviceID', 'equalto', syncthing_synology_device_id)
+                              | map(attribute='name') | first) | default('') }}
+                      no_log: true
+
                     # --- Add Synology device if not present ---
                     - name: Add Synology device
                       ansible.builtin.uri:
@@ -279,7 +327,7 @@
                         body_format: json
                         body:
                           deviceID: "{{ syncthing_synology_device_id }}"
-                          name: Synology
+                          name: "{{ syncthing_synology_name }}"
                           addresses:
                             - dynamic
                           autoAcceptFolders: false
@@ -289,6 +337,24 @@
                       changed_when: true
                       no_log: true
                       when: not syncthing_synology_exists
+
+                    # --- Rename Synology device if it exists with a different name ---
+                    - name: Rename Synology device
+                      ansible.builtin.uri:
+                        url: "{{ syncthing_api_url }}/rest/config/devices/{{ syncthing_synology_device_id }}"
+                        headers:
+                          X-API-Key: "{{ syncthing_api_key }}"
+                        method: PATCH
+                        body_format: json
+                        body:
+                          name: "{{ syncthing_synology_name }}"
+                        status_code: [200, 201]
+                      register: syncthing_rename_synology
+                      changed_when: true
+                      no_log: true
+                      when:
+                        - syncthing_synology_exists
+                        - syncthing_synology_current_name | default('') != syncthing_synology_name
 
                     # --- Get current folders ---
                     - name: Get current Syncthing folders
