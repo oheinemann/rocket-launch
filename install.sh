@@ -97,6 +97,9 @@ if [ ! -d "$RL_HOME/.git" ]; then
 else
   logn "Updating engine in $RL_HOME:"; git -C "$RL_HOME" pull --ff-only >/dev/null 2>&1 || true; logk
 fi
+# git may not carry the executable bit across every setup (existing clones, core.fileMode),
+# so guarantee it — this also makes the `rocket` symlink runnable.
+chmod +x "$RL_HOME/bin/rocket.sh" 2>/dev/null || true
 # Expose a clean `rocket` command via a symlink in ~/.local/bin.
 mkdir -p "$HOME/.local/bin"
 ln -sf "$RL_HOME/bin/rocket.sh" "$HOME/.local/bin/rocket"
@@ -106,7 +109,8 @@ export PATH="$HOME/.local/bin:$PATH"
 # Phase 1 — provisioning (ansible + chezmoi, data-driven from config repo)
 # ----------------------------------------------------------------------------
 log "Phase 1: provision"
-"$RL_HOME/bin/rocket.sh" provision --config "$RL_CONFIG_REPO"
+# Invoke via bash so a missing executable bit can never block Phase 1.
+bash "$RL_HOME/bin/rocket.sh" provision --config "$RL_CONFIG_REPO"
 
 echo
 log "Done. Open a new shell to pick up PATH and shell config."
