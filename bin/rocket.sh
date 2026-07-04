@@ -167,7 +167,7 @@ cmd_doctor() {
   printf "  Distro   : %s\n" "${RL_DISTRO:-n/a}"
   printf "  Arch     : %s\n" "$RL_ARCH"
   printf "  WSL      : %s\n" "$RL_WSL"
-  printf "  Hostname : %s\n" "$(hostname -s 2>/dev/null || hostname)"
+  printf "  Hostname : %s\n" "$(_hn="$(hostname 2>/dev/null)"; printf '%s' "${_hn%%.*}")"
   echo
   log "Tools"
   for t in git ansible ansible-playbook chezmoi op; do
