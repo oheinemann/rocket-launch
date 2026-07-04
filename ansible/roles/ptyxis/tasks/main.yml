@@ -20,10 +20,12 @@
         value: "false"
         state: present
 
+    # Pango font description: "<family>[ weight=<n>] <size>", e.g.
+    # "FiraCode Nerd Font weight=450 14".
     - name: Ptyxis — set the terminal font
       community.general.dconf:
         key: /org/gnome/Ptyxis/font-name
-        value: "'{{ terminal_font }} {{ terminal_font_size }}'"
+        value: "'{{ terminal_font }}{{ (' weight=' ~ ptyxis_font_weight) if (ptyxis_font_weight | string | length > 0) else '' }} {{ terminal_font_size }}'"
         state: present
 
     - name: Ptyxis — read the default profile UUID

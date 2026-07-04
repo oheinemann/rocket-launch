@@ -5,5 +5,8 @@
 terminal_font: "FiraCode Nerd Font"
 terminal_font_size: 14
 
+# Pango font weight for Ptyxis (450 = FiraCode "Retina", medium). Empty = omit.
+ptyxis_font_weight: "450"
+
 # Ptyxis built-in palette name applied to the default profile.
 ptyxis_palette: "solarized"
