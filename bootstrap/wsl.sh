@@ -17,3 +17,8 @@ if ! command -v chezmoi >/dev/null 2>&1; then
   export PATH="$HOME/.local/bin:$PATH"
   logk
 fi
+
+# Persist ~/.local/bin for new shells (chezmoi + the `rocket` symlink live there).
+logn "Persisting ~/.local/bin to shell profile:"
+rl_append_once "$HOME/.bashrc" "# rocket-launch (PATH)" 'export PATH="$HOME/.local/bin:$PATH"'
+logk

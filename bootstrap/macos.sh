@@ -55,6 +55,24 @@ install_provisioners() {
   logk
 }
 
+# --- Persist PATH for new shells (before the shell role / dotfiles run) ---
+# So `rocket`, brew, gh and chezmoi are on PATH in any new terminal immediately —
+# e.g. for manual GitHub auth during the first run. ~/.zprofile is not managed by
+# chezmoi, so these lines survive provisioning.
+persist_path() {
+  local brew_prefix block marker
+  brew_prefix="$(brew --prefix 2>/dev/null || echo /opt/homebrew)"
+  marker="# rocket-launch (PATH)"
+  block="eval \"\$(${brew_prefix}/bin/brew shellenv)\"
+export PATH=\"\$HOME/.local/bin:\$PATH\""
+  logn "Persisting PATH to shell profile:"
+  rl_append_once "$HOME/.zprofile" "$marker" "$block"
+  # Only touch ~/.bash_profile if it already exists (avoid shadowing ~/.profile).
+  [ -f "$HOME/.bash_profile" ] && rl_append_once "$HOME/.bash_profile" "$marker" "$block"
+  logk
+}
+
 install_clt
 install_brew
 install_provisioners
+persist_path

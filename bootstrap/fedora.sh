@@ -16,3 +16,8 @@ if command -v flatpak >/dev/null 2>&1; then
     https://flathub.org/repo/flathub.flatpakrepo >/dev/null 2>&1 || true
   logk
 fi
+
+# Persist ~/.local/bin for new shells (the `rocket` symlink lives there).
+logn "Persisting ~/.local/bin to shell profile:"
+rl_append_once "$HOME/.bashrc" "# rocket-launch (PATH)" 'export PATH="$HOME/.local/bin:$PATH"'
+logk
