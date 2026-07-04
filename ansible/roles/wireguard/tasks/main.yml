@@ -1,24 +1,19 @@
 ---
-# Install WireGuard tools and optionally materialize tunnel config from 1Password.
+# Install WireGuard tools (Linux) and materialize tunnel config from 1Password.
 # Triggered by "'laptop' in host_profiles" — mobile devices that need VPN access.
 # Non-laptop hosts (fixed desktops / servers) do not get WireGuard.
 #
-# Usage: Manual connection via `sudo wg-quick up ~/.config/wireguard/wg0.conf`
-# No autostart — connect only when needed (outside home network).
+# macOS: GUI app installed via packages/mas (macos profile); config materialized
+#        here, then import manually once in the app (see docs/first-run-macos.md).
+# Linux: CLI tools installed here; connection via `sudo wg-quick up <conf>`.
+# WSL:   skipped — use WireGuard GUI on Windows host (winget).
 
 # =============================================================================
-# Install wireguard-tools
+# Install wireguard-tools (Linux only; macOS uses GUI app via packages/mas)
 # =============================================================================
 
-- name: Install wireguard-tools
+- name: Install wireguard-tools (Linux)
   block:
-    # --- macOS ---
-    - name: Install wireguard-tools (macOS)
-      community.general.homebrew:
-        name: wireguard-tools
-        state: present
-      when: rl_os == 'macos'
-
     # --- Fedora ---
     - name: Install wireguard-tools (Fedora)
       ansible.builtin.dnf:
@@ -38,6 +33,7 @@
     # --- WSL ---
     # NOTE: WireGuard on WSL is skipped. For Windows laptops, use the WireGuard
     # GUI on the Windows host (install via winget, see windows-host.txt).
+  when: rl_os == 'linux'
 
 # =============================================================================
 # Materialize config from 1Password (only if wireguard_op_ref is set)
@@ -48,7 +44,7 @@
   block:
     - name: Ensure WireGuard config directory exists
       ansible.builtin.file:
-        path: "{{ ansible_env.HOME }}/.config/wireguard"
+        path: "{{ ansible_facts.env.HOME }}/.config/wireguard"
         state: directory
         mode: "0700"
 
@@ -64,7 +60,7 @@
     - name: Write WireGuard config file
       ansible.builtin.copy:
         content: "{{ wg_config.stdout }}"
-        dest: "{{ ansible_env.HOME }}/.config/wireguard/{{ wireguard_iface }}.conf"
+        dest: "{{ ansible_facts.env.HOME }}/.config/wireguard/{{ wireguard_iface }}.conf"
         mode: "0600"
       no_log: true
       when:

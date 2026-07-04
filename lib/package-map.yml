@@ -94,9 +94,21 @@ spark:
 # --- Mac App Store (mas) — macOS only, requires App Store sign-in ---
 # Use `{ mgr: mas, id: <App-Store-id> }`; find ids with `mas search <name>`.
 # The engine installs mas-cli on demand. Reference these keys from a profile (macos).
-amphetamine:
-  macos: { mgr: mas, id: 937984704 }
 magnet:
   macos: { mgr: mas, id: 441258766 }
-things:
-  macos: { mgr: mas, id: 904280696 }
+windows-app:
+  # Microsoft "Windows App" (formerly Remote Desktop) — RDP client for remote access.
+  macos: { mgr: mas, id: 1295203466 }
+calendars:
+  # Calendars by Readdle.
+  # TODO: verify Mac App Store id via `mas search` on target Mac (not iOS variant)
+  macos: { mgr: mas, id: 1161233340 }
+be-focused:
+  # Be Focused (Pomodoro timer).
+  # TODO: verify Mac App Store id via `mas search` on target Mac (not iOS variant)
+  macos: { mgr: mas, id: 973134470 }
+wireguard-gui:
+  # WireGuard GUI app (official, macOS only). On macOS laptops, install via mas;
+  # config materialized by wireguard role, then import manually once in the app.
+  # Linux/WSL use CLI (wireguard-tools) via the wireguard role directly.
+  macos: { mgr: mas, id: 1451685025 }
