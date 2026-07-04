@@ -25,6 +25,178 @@ RL_CONFIG_REPO_DEFAULT="https://github.com/oheinemann/rocket-launch-config.git"
 
 usage() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; }
 
+# -----------------------------------------------------------------------------
+# GitHub auth helpers for first-run bootstrap (RL-23)
+# -----------------------------------------------------------------------------
+
+# Convert SSH URL to HTTPS URL if needed.
+# git@github.com:org/repo.git -> https://github.com/org/repo.git
+# git@github.com:org/repo     -> https://github.com/org/repo.git
+# HTTPS URLs pass through unchanged.
+ssh_to_https_url() {
+  local url="$1"
+  if [[ "$url" =~ ^git@github\.com:(.+)$ ]]; then
+    local path="${BASH_REMATCH[1]}"
+    # Strip trailing .git if present, then re-add it for consistency
+    path="${path%.git}"
+    printf 'https://github.com/%s.git' "$path"
+  else
+    # Already HTTPS or other format — return as-is
+    printf '%s' "$url"
+  fi
+}
+
+# Install gh CLI if not present. Returns 0 on success, 1 on failure.
+ensure_gh() {
+  command -v gh >/dev/null 2>&1 && return 0
+
+  log "Installing GitHub CLI (gh)..."
+
+  case "$RL_CONTEXT" in
+    macos)
+      if ! command -v brew >/dev/null 2>&1; then
+        warn "Homebrew not found — cannot install gh."
+        return 1
+      fi
+      brew install gh >/dev/null 2>&1 || { warn "Failed to install gh via brew."; return 1; }
+      ;;
+    fedora)
+      sudo dnf install -y gh >/dev/null 2>&1 || { warn "Failed to install gh via dnf."; return 1; }
+      ;;
+    wsl|linux)
+      # gh apt repository (deb822 style)
+      local arch
+      arch="$(dpkg --print-architecture 2>/dev/null || echo amd64)"
+      local keyring="/etc/apt/keyrings/githubcli-archive-keyring.gpg"
+      local source_file="/etc/apt/sources.list.d/github-cli.sources"
+
+      # Create keyrings directory if needed
+      sudo mkdir -p /etc/apt/keyrings
+
+      # Download GPG key
+      if ! curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+           | sudo tee "$keyring" >/dev/null 2>&1; then
+        warn "Failed to download gh GPG key."
+        return 1
+      fi
+      sudo chmod 644 "$keyring"
+
+      # Write deb822-style source file
+      printf 'Types: deb\nURIs: https://cli.github.com/packages\nSuites: stable\nComponents: main\nArchitectures: %s\nSigned-By: %s\n' \
+        "$arch" "$keyring" | sudo tee "$source_file" >/dev/null
+
+      # Update and install
+      if ! sudo apt-get update >/dev/null 2>&1; then
+        warn "apt-get update failed."
+        return 1
+      fi
+      if ! sudo apt-get install -y gh >/dev/null 2>&1; then
+        warn "Failed to install gh via apt."
+        return 1
+      fi
+      ;;
+    *)
+      warn "Cannot install gh on context '$RL_CONTEXT'."
+      return 1
+      ;;
+  esac
+
+  command -v gh >/dev/null 2>&1
+}
+
+# Attempt to establish GitHub access for the config repo.
+# Tries token-based auth first, then interactive gh auth.
+# Sets CLONED_VIA_TOKEN=true if the repo was cloned with a token.
+# Returns 0 if auth was established (or clone succeeded), 1 otherwise.
+ensure_github_access() {
+  local repo="$1"
+  CLONED_VIA_TOKEN=false
+
+  # --- A) Non-interactive token path (CI/headless) ---
+  local token="${RL_CONFIG_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
+  if [ -n "$token" ]; then
+    log "Using token from environment for config repo..."
+
+    # Convert SSH URL to HTTPS for token auth
+    local https_url
+    https_url="$(ssh_to_https_url "$repo")"
+
+    # Extract org/repo path from HTTPS URL
+    local repo_path
+    if [[ "$https_url" =~ ^https://github\.com/(.+)$ ]]; then
+      repo_path="${BASH_REMATCH[1]}"
+      repo_path="${repo_path%.git}"
+    else
+      warn "Cannot parse repository URL: $https_url"
+      return 1
+    fi
+
+    # Clone with token (output suppressed to avoid leaking token in error messages)
+    if git clone "https://x-access-token:${token}@github.com/${repo_path}.git" "$RL_CONFIG_HOME" >/dev/null 2>&1; then
+      # Immediately remove token from stored remote URL
+      git -C "$RL_CONFIG_HOME" remote set-url origin "https://github.com/${repo_path}.git" >/dev/null 2>&1
+      CLONED_VIA_TOKEN=true
+      return 0
+    else
+      warn "Token-based clone failed."
+      return 1
+    fi
+  fi
+
+  # --- B) Interactive gh path (TTY available, no token) ---
+  if [ -e /dev/tty ]; then
+    # Prompt user
+    printf '%s==>%s %sPrivate config repo needs GitHub access. Authenticate now with gh? [Y/n]%s ' \
+      "$RL_BLUE" "$RL_END" "$RL_BOLD" "$RL_END" >/dev/tty
+    local answer
+    read -r answer </dev/tty || answer=""
+    # Default to Y if empty
+    case "$answer" in
+      [Nn]*)
+        warn "Authentication declined."
+        return 1
+        ;;
+    esac
+
+    # Install gh if needed
+    if ! ensure_gh; then
+      warn "Could not install gh CLI."
+      return 1
+    fi
+
+    # Determine protocol from original URL
+    local protocol="https"
+    if [[ "$repo" =~ ^git@ ]]; then
+      protocol="ssh"
+    fi
+
+    log "Running 'gh auth login' (browser/device code required)..."
+    log "Note: gh will create a bootstrap SSH key if using SSH protocol."
+    log "      This key can be removed later once 1Password SSH is configured."
+
+    # Run gh auth login interactively via /dev/tty
+    if [ "$protocol" = "ssh" ]; then
+      if ! gh auth login --hostname github.com --git-protocol ssh </dev/tty >/dev/tty 2>&1; then
+        warn "gh auth login failed."
+        return 1
+      fi
+    else
+      if ! gh auth login --hostname github.com --git-protocol https </dev/tty >/dev/tty 2>&1; then
+        warn "gh auth login failed."
+        return 1
+      fi
+      # Set up git credential helper for HTTPS
+      gh auth setup-git >/dev/null 2>&1 || true
+    fi
+
+    log "GitHub authentication configured."
+    return 0
+  fi
+
+  # --- C) No token and no TTY — cannot proceed interactively ---
+  return 1
+}
+
 cmd_doctor() {
   log "Environment"
   printf "  OS       : %s\n" "$RL_OS"
@@ -59,13 +231,35 @@ clone_or_update_config() {
       logk
     else
       echo
-      warn "Could not clone the private config repo:"
-      warn "  $repo"
-      warn "A fresh machine has no GitHub access yet. Set up ONE of these, then re-run:"
-      warn "  • SSH  (git@github.com:...): add an SSH key to GitHub — e.g. sign into the"
-      warn "    1Password app and enable its SSH agent, or 'gh auth login'."
-      warn "  • HTTPS (https://github.com/...): 'gh auth login' or a Personal Access Token."
-      abort "Re-run after authenticating: rocket provision --config $repo"
+      # First clone attempt failed — try to establish auth and retry once.
+      if ensure_github_access "$repo"; then
+        # Auth established (or repo cloned via token)
+        if [ "$CLONED_VIA_TOKEN" = true ]; then
+          # Already cloned during token auth
+          log "Config repo cloned successfully."
+        else
+          # Auth configured via gh — retry clone
+          logn "Retrying clone:"
+          if git clone "$repo" "$RL_CONFIG_HOME" >/dev/null 2>&1; then
+            logk
+          else
+            echo
+            warn "Clone still failed after authentication."
+            warn "Could not clone the private config repo:"
+            warn "  $repo"
+            abort "Re-run after verifying GitHub access: rocket provision --config $repo"
+          fi
+        fi
+      else
+        # Auth helper failed or declined — show manual instructions
+        warn "Could not clone the private config repo:"
+        warn "  $repo"
+        warn "A fresh machine has no GitHub access yet. Set up ONE of these, then re-run:"
+        warn "  • SSH  (git@github.com:...): add an SSH key to GitHub — e.g. sign into the"
+        warn "    1Password app and enable its SSH agent, or 'gh auth login'."
+        warn "  • HTTPS (https://github.com/...): 'gh auth login' or a Personal Access Token."
+        abort "Re-run after authenticating: rocket provision --config $repo"
+      fi
     fi
   else
     logn "Updating config repo:"; git -C "$RL_CONFIG_HOME" pull --ff-only >/dev/null 2>&1 || true; logk
