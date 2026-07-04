@@ -28,6 +28,19 @@ RL_HOME="${RL_HOME:-$(cd -P "$(dirname "$_rl_src")/.." >/dev/null 2>&1 && pwd)}"
 # shellcheck disable=SC1091
 . "$RL_HOME/lib/detect-os.sh"
 
+# Resolve the machine name to match against machines.yml keys. On macOS the
+# `hostname` command is network-derived (can be a FQDN like name.fritz.box or a
+# fallback like "Mac"), so prefer the stable LocalHostName / ComputerName.
+resolve_hostname() {
+  local h=""
+  if [ "${RL_CONTEXT:-}" = macos ] || [ "${RL_OS:-}" = macos ]; then
+    h="$(scutil --get LocalHostName 2>/dev/null || true)"
+    [ -n "$h" ] || h="$(scutil --get ComputerName 2>/dev/null || true)"
+  fi
+  [ -n "$h" ] || h="$(hostname 2>/dev/null || true)"
+  printf '%s' "${h%%.*}"
+}
+
 RL_CONFIG_HOME="${RL_CONFIG_HOME:-$HOME/.rocket-launch-config}"
 RL_CONFIG_REPO_DEFAULT="https://github.com/oheinemann/rocket-launch-config.git"
 
@@ -167,7 +180,7 @@ cmd_doctor() {
   printf "  Distro   : %s\n" "${RL_DISTRO:-n/a}"
   printf "  Arch     : %s\n" "$RL_ARCH"
   printf "  WSL      : %s\n" "$RL_WSL"
-  printf "  Hostname : %s\n" "$(_hn="$(hostname 2>/dev/null)"; printf '%s' "${_hn%%.*}")"
+  printf "  Hostname : %s\n" "$(resolve_hostname)"
   echo
   log "Tools"
   for t in git ansible ansible-playbook chezmoi op; do
@@ -259,11 +272,8 @@ cmd_provision() {
     fi
   fi
 
-  # Short hostname (strip .local / DNS domain) so it matches machines.yml keys —
-  # macOS `hostname` often returns "name.local", which would fall back to defaults.
   local rl_hostname
-  rl_hostname="$(hostname -s 2>/dev/null || hostname)"
-  rl_hostname="${rl_hostname%%.*}"
+  rl_hostname="$(resolve_hostname)"
   log "Resolving host as: $rl_hostname"
 
   log "Running ansible playbook"
