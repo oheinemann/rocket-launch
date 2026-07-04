@@ -167,7 +167,7 @@ cmd_doctor() {
   printf "  Distro   : %s\n" "${RL_DISTRO:-n/a}"
   printf "  Arch     : %s\n" "$RL_ARCH"
   printf "  WSL      : %s\n" "$RL_WSL"
-  printf "  Hostname : %s\n" "$(hostname)"
+  printf "  Hostname : %s\n" "$(hostname -s 2>/dev/null || hostname)"
   echo
   log "Tools"
   for t in git ansible ansible-playbook chezmoi op; do
@@ -259,12 +259,19 @@ cmd_provision() {
     fi
   fi
 
+  # Short hostname (strip .local / DNS domain) so it matches machines.yml keys —
+  # macOS `hostname` often returns "name.local", which would fall back to defaults.
+  local rl_hostname
+  rl_hostname="$(hostname -s 2>/dev/null || hostname)"
+  rl_hostname="${rl_hostname%%.*}"
+  log "Resolving host as: $rl_hostname"
+
   log "Running ansible playbook"
   ansible-playbook \
     -i "$RL_HOME/ansible/inventory/local.yml" \
     -e "rl_config_home=$RL_CONFIG_HOME" \
     -e "rl_context=$RL_CONTEXT" \
-    -e "rl_hostname=$(hostname)" \
+    -e "rl_hostname=$rl_hostname" \
     ${become_args[@]+"${become_args[@]}"} \
     "$RL_HOME/ansible/site.yml" \
     ${passthrough[@]+"${passthrough[@]}"}
