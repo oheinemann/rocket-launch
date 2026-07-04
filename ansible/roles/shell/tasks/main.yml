@@ -42,6 +42,22 @@
     version: master
   when: shell_install_p10k | bool
 
+# --- oh-my-zsh custom plugins (referenced by the managed .zshrc) ---
+- name: Install zsh custom plugins
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ ansible_facts.env.HOME }}/.oh-my-zsh/custom/plugins/{{ item.name }}"
+    depth: 1
+    version: master
+  loop:
+    - name: zsh-autosuggestions
+      repo: https://github.com/zsh-users/zsh-autosuggestions.git
+    - name: zsh-syntax-highlighting
+      repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+  loop_control:
+    label: "{{ item.name }}"
+  when: shell_install_plugins | bool
+
 # NOTE: Nerd Fonts are now installed via the dedicated 'fonts' role.
 
 # --- default shell ---

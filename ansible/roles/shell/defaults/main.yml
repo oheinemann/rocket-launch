@@ -3,6 +3,7 @@
 shell_default: zsh                 # login shell to set
 shell_install_omz: true            # oh-my-zsh framework
 shell_install_p10k: true           # powerlevel10k prompt
+shell_install_plugins: true        # zsh-autosuggestions + zsh-syntax-highlighting
 shell_set_default: true            # chsh to shell_default
 
 # NOTE: Nerd Fonts are now installed via the dedicated 'fonts' role.
