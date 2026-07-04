@@ -4,6 +4,41 @@
 # Sources: https://ddev.readthedocs.io/en/stable/users/install/
 
 # =============================================================================
+# macOS: Auto-start OrbStack and wait for Docker (RL-28)
+# =============================================================================
+# On macOS, Docker = OrbStack. The cask installs the .app but the docker CLI
+# and daemon only become available after OrbStack is started once. This block
+# starts OrbStack headlessly and waits for the Docker socket before DDEV install.
+
+- name: Start OrbStack and wait for Docker (macOS)
+  when:
+    - rl_os == 'macos'
+    - not ansible_check_mode
+  block:
+    - name: Check if OrbStack is installed
+      ansible.builtin.stat:
+        path: /Applications/OrbStack.app
+      register: orbstack_app
+
+    - name: Start OrbStack headlessly
+      ansible.builtin.command:
+        cmd: open -ga OrbStack
+      check_mode: false
+      changed_when: false
+      when: orbstack_app.stat.exists | default(false)
+
+    - name: Wait for Docker socket to become available
+      ansible.builtin.wait_for:
+        # TODO: verify OrbStack socket path on target Mac
+        # OrbStack typically creates ~/.orbstack/run/docker.sock or symlinks
+        # /var/run/docker.sock. Using the user-space socket for robustness.
+        path: "{{ ansible_facts.env.HOME }}/.orbstack/run/docker.sock"
+        state: present
+        timeout: 90
+      failed_when: false
+      when: orbstack_app.stat.exists | default(false)
+
+# =============================================================================
 # Pre-Flight: Docker must be available
 # =============================================================================
 
