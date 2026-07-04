@@ -266,10 +266,17 @@ cmd_provision() {
   # sudo already works, skip it; otherwise let ansible ask once. --no-sudo opts out.
   local become_args=()
   if [ "$no_sudo" != true ]; then
+    # Prime sudo once and keep the timestamp fresh for the whole run. This covers
+    # BOTH ansible become tasks AND Homebrew's internal `sudo installer` for
+    # pkg-based casks (e.g. microsoft-teams), which otherwise fail mid-run with
+    # "sudo: a terminal is required to read the password".
     if ! sudo -n true 2>/dev/null; then
-      log "sudo needs a password — ansible will prompt once."
-      become_args+=(--ask-become-pass)
+      log "Administrator rights are needed (some apps install via a pkg installer)."
+      sudo -v || abort "Could not obtain sudo access (needed for pkg-based apps)."
     fi
+    ( while true; do sudo -n true 2>/dev/null || break; sleep 50; done ) &
+    _rl_sudo_pid=$!
+    trap 'kill "${_rl_sudo_pid:-}" 2>/dev/null || true' EXIT
   fi
 
   local rl_hostname
