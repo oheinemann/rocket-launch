@@ -96,6 +96,11 @@ spark:
   macos: { mgr: brew-cask, id: readdle-spark }
   # On Windows host: winget Readdle.Spark (see config windows-host.txt).
 
+scansnap-home:
+  # Fujitsu/Ricoh ScanSnap Home scanner software. macOS via cask. No winget
+  # package on Windows (install manually) and no Linux client.
+  macos: { mgr: brew-cask, id: fujitsu-scansnap-home }
+
 # --- Mac App Store (mas) — macOS only, requires App Store sign-in ---
 # Use `{ mgr: mas, id: <App-Store-id> }`; find ids with `mas search <name>`.
 # The engine installs mas-cli on demand. Reference these keys from a profile (macos).
