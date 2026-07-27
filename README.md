@@ -79,7 +79,12 @@ slack:
 rocket doctor      # show detected env + tool availability
 rocket bootstrap   # (re)run Phase 0 for this OS
 rocket provision --config <git-url>   # (re)run Phase 1
+rocket update      # git-pull the engine, then re-run provision
 ```
+
+> Engine changes (package map, roles) reach a machine only when `~/.rocket-launch`
+> is pulled — `provision` alone updates only the config repo. `rocket update` does
+> both; add `--no-provision` to only refresh the engine.
 
 ## Supported targets
 

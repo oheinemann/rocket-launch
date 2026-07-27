@@ -8,6 +8,7 @@
 # Commands:
 #   bootstrap            Run Phase 0 (install git/ansible/chezmoi for this OS)
 #   provision [--no-sudo]  Run Phase 1 (ansible playbook + chezmoi apply)
+#   update [--no-provision]  git-pull the engine, then re-run provision
 #   doctor               Print detected environment and tool availability
 #   version              Print the engine version
 #   help                 Show this help
@@ -305,11 +306,59 @@ cmd_provision() {
     ${passthrough[@]+"${passthrough[@]}"}
 }
 
+# Self-update the engine checkout, then re-run provision with the fresh code.
+# Engine changes (package-map, roles, site.yml) only reach a machine when
+# ~/.rocket-launch is pulled — `provision` alone updates only the config repo.
+# `--no-provision` updates the engine without provisioning. Extra args are
+# forwarded to provision (e.g. --config, --no-sudo).
+cmd_update() {
+  local do_provision=true
+  local passthrough=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --no-provision) do_provision=false; shift ;;
+      *) passthrough+=("$1"); shift ;;   # forwarded to provision
+    esac
+  done
+
+  command -v git >/dev/null 2>&1 || abort "git not found — run 'rocket bootstrap' first."
+
+  if [ ! -d "$RL_HOME/.git" ]; then
+    warn "Engine at $RL_HOME is not a git checkout — cannot self-update."
+    warn "Refresh it by re-running the installer:"
+    warn "  curl -fsSL https://raw.githubusercontent.com/oheinemann/rocket-launch/main/install.sh | bash"
+    abort "Engine update skipped."
+  fi
+
+  local before after
+  before="$(git -C "$RL_HOME" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  logn "Updating engine ($RL_HOME):"
+  if git -C "$RL_HOME" pull --ff-only >/dev/null 2>&1; then
+    logk
+  else
+    echo
+    warn "Engine update failed (local changes or non-fast-forward)."
+    abort "Inspect it manually: git -C $RL_HOME status"
+  fi
+  after="$(git -C "$RL_HOME" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  if [ "$before" = "$after" ]; then
+    log "Engine already up to date ($after)."
+  else
+    log "Engine updated: $before -> $after."
+  fi
+
+  if [ "$do_provision" = true ]; then
+    log "Re-running provision with the updated engine..."
+    exec bash "$RL_HOME/bin/rocket.sh" provision ${passthrough[@]+"${passthrough[@]}"}
+  fi
+}
+
 main() {
   local command="${1:-help}"; shift || true
   case "$command" in
     bootstrap) cmd_bootstrap "$@" ;;
     provision) cmd_provision "$@" ;;
+    update)    cmd_update "$@" ;;
     doctor)    cmd_doctor "$@" ;;
     version)   cat "$RL_HOME/VERSION" 2>/dev/null || echo "dev" ;;
     help|-h|--help) usage ;;
